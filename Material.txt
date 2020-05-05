@@ -1,0 +1,4 @@
+name			,	density
+Water			,	1
+Liquid Oxygen	,	1.141
+Liquid Hydrogen	,	0.07085
