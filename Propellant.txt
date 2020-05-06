@@ -1,2 +1,0 @@
-name		,ve			,dw			,composition					,ratio
-LOX-LH2		,4419.8		,0.036		,Liquid Hydrogen|Liquid Oxygen	,0.67|0.33

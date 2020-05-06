@@ -1,4 +1,4 @@
-name			,	density
-Water			,	1
-Liquid Oxygen	,	1.141
-Liquid Hydrogen	,	0.07085
+name			,	density		,molar
+Water			,	1			,0.018
+Liquid Oxygen	,	1.141		,0.016
+Liquid Hydrogen	,	0.07085		,0.002
