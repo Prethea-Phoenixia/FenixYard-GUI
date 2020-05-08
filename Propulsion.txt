@@ -1,2 +1,2 @@
-name			,dw		,ve			,composition					,ratio		,twr	
-LH2-LOX			,0.036	,4410		,Liquid Hydrogen|Liquid Oxygen	,2|1		,50
+name		,ve			,composition		,ratio		,twr	
+LH2-LOX		,4410		,Hydrogen|Oxygen	,2|1		,50
