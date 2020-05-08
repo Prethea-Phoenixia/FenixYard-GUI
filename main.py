@@ -163,7 +163,6 @@ class Mod(object):
     def __init__(self):
         self.mass = None
         self.volume = None
-        self.pos = None
         self.str = None
 
         # radius and height respectively.
@@ -179,6 +178,14 @@ class Tank(Mod):
 
         # width, equal to h-2r
         self.w = None
+
+    def print(self):
+        print("{} tank made of {}".format(self.content.name, self.str.name))
+        print(
+            "{:.2f} kg empty, currently {:.2f} kg".format(
+                self.mass, self.pmass + self.mass
+            )
+        )
 
     def filltank(self, propellant, pmass, material):
         self.content = propellant
@@ -201,11 +208,12 @@ class Tank(Mod):
         w = self.w
         pmass = self.pmass
         # iterative finding mass.
+        propellant = self.content
+        gas_p = propellant.vap_pres(propellant.stdBP)
 
-        str_mtr.print()
         def f(mass):
             f = (pmass + mass) * acc
-            p = f / (pi * r ** 2)
+            p = f / (pi * r ** 2) + gas_p
             massTank = (
                 2 * pi * r ** 2 * (r + w) * p * str_mtr.sdensity / str_mtr.yieldstrength
             )
@@ -249,12 +257,43 @@ class Ship(object):
         if isinstance(module, Engine):
             self.engines.append(Engine)
 
+    def addcluster(self, cluster_list):
+        self.module.append(cluster_list)
+        for module in cluster_list:
+            if isinstance(module, Engine):
+                self.engines.append(Engine)
+
     def tally(self):
+        queue = []
         for module in self.module:
+            if isinstance(module, list):
+                queue.extend(module)
+            else:
+                queue.append(module)
+        for module in queue:
             if module.mass is not None:
                 self.mass += module.mass
             if isinstance(module, Tank):
                 self.mass += module.pmass
+
+    def buildup_tank(self):
+        acc_lim = self.str_acc_lim
+        for pos in self.module:
+            if isinstance(pos, list):
+                for mod in pos:
+                    if isinstance(mod, Tank):
+                        mod.buildup(acc_lim)
+            else:
+                if isinstance(pos, Tank):
+                    pos.buildup(acc_lim)
+
+    def print(self):
+        print("ship diagram:")
+        for pos in self.module:
+            if not isinstance(pos, list):
+                print("|  {:^6}  |".format(pos.__class__.__name__), end="")
+                print("")
+        print("mass:{:.2f} kg".format(self.mass))
 
 
 # return a list of the .name attribute of a list of instances, in order.
@@ -354,16 +393,17 @@ aluminum = return_instance_from_list("Aluminum", materials)
 hydtank = Tank()
 hydtank.filltank(hydrogen, 2500, aluminum)
 hydtank.resize(2)
-hydtank.buildup(20)
+
 oxytank = Tank()
 oxytank.filltank(oxygen, 10000, aluminum)
 oxytank.resize(2)
-oxytank.buildup(20)
-
 
 testship = Ship()
+testship.str_acc_lim = 10
 testship.addmod(oxytank)
 testship.addmod(hydtank)
+testship.buildup_tank()
 testship.tally()
-testship.str_acc_lim = 200
-print(testship.mass)
+
+
+testship.print()
