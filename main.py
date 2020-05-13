@@ -42,13 +42,12 @@ class Ship(object):
         self.module.append(radials)
         for eng in radials:
             spher = Vector(1, pi / 2, 2 * pi * radials.index(eng) / len(radials))
-            spher.spher_to_cart().print()
-            self.engines.append([engine, spher.spher_to_cart()])
+            self.engines.append([eng, spher.spher_to_cart()])
 
     def tally(self):
         # tally ship mass
         self.mass = 0
-        queue = self.get_flat_mod()
+        queue = self.get_flat("module")
         for module in queue:
             if module.mass is not None:
                 self.mass += module.mass
@@ -161,16 +160,28 @@ class Ship(object):
         self.tally()
         return ve
 
-    def get_flat_mod(self):
-        queue = []
-        for module in self.module:
-            if isinstance(module, list):
-                queue.extend(module)
+    def get_mod_pos(self, mod):
+        if isinstance(mod, list):
+            return self.mod_pos[self.module.index(mod)]
+        else:
+            if mod in self.module:
+                return self.mod_pos[self.module.index(mod)]
             else:
-                queue.append(module)
+                flat_pos = self.get_flat("mod_pos")
+                return flat_pos[self.get_flat("mod").index(mod)]
+
+    # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
+    # into [a,b,c,d]
+    def get_flat(self, attr):
+        queue = []
+        for stuff in getattr(self, attr):
+            if isinstance(stuff, list):
+                queue.extend(stuff)
+            else:
+                queue.append(stuff)
         return queue
 
-    def get_engine_pos(self, engine):
+    def get_engine_orient(self, engine):
         for e, o in self.engines:
             if e == engine:
                 return o
@@ -203,7 +214,7 @@ class Ship(object):
             if all(isinstance(x, Tank) for x in pos):
                 pad(len(pos))
                 for mod in pos:
-                    print("/--------------\\", end="")
+                    print("/¯¯¯¯¯¯¯¯¯¯¯¯¯¯\\", end="")
                 print("")
                 pad(len(pos))
                 for mod in pos:
@@ -217,12 +228,35 @@ class Ship(object):
                 print("")
                 pad(len(pos))
                 for mod in pos:
-                    print("\\--------------/", end="")
+                    print("\\______________/", end="")
                 print("")
 
             elif all(isinstance(x, Engine) for x in pos):
                 pad(len(pos))
-                op = str("|  {:^10}  |".format(mod.__class__.__name__))
+                for eng in pos:
+                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
+                        op = str("\\__{:^10}__/".format(eng.__class__.__name__))
+                    else:
+                        op = str("      {:_^4}      ".format("\\/"))
+                    print(op, end="")
+                print("")
+                pad(len(pos))
+                for eng in pos:
+                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
+                        # main thruster, firing toward the back:
+                        op = str("   /        \\   ")
+                    else:
+                        op = str("     >{:^4}<     ".format("RCS"))
+                    print(op, end="")
+                print("")
+                pad(len(pos))
+                for eng in pos:
+                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
+                        op = str("  /          \\  ")
+                    else:
+                        op = str("      {:¯^4}      ".format("/\\"))
+                    print(op, end="")
+                print("")
 
         print("mass:{:.2f} kg".format(self.mass))
 
@@ -237,7 +271,7 @@ class State(object):
 
     # fire main thrusters to move along orientation.
     def fire_main_thrusters(self, time):
-        modules = self.ship.get_flat_mod()
+        modules = self.ship.get_flat("module")
         tanks = []
         for mod in modules:
             if isinstance(mod, Tank):
@@ -264,12 +298,12 @@ class State(object):
     def print(self):
         self.ship.print()
         print(
-            "position {:^6.1f} {:^6.1f} {:^6.1f}".format(
+            "position    {:^6.1f} {:^6.1f} {:^6.1f}".format(
                 self.pos.x, self.pos.y, self.pos.z
             )
         )
         print(
-            "velocity {:^6.1f} {:^6.1f} {:^6.1f}".format(
+            "velocity    {:^6.1f} {:^6.1f} {:^6.1f}".format(
                 self.vel.x, self.vel.y, self.vel.z
             )
         )
@@ -325,9 +359,8 @@ testship.str_acc_lim = 30
 testship.addmod(watertank)
 testship.addcluster([oxytank, hydtank])
 testship.addcluster([oxytank, hydtank])
+testship.addradialengines(rcs, 3)
 testship.addengine(engine, Vector(0, 0, 1))
-# testship.addengine(engine, Vector(0, 0, 1))
-testship.addradialengines(engine, 3)
 testship.buildup_tank()
 testship.tally()
 
@@ -336,6 +369,3 @@ testscene.ship = testship
 testscene.print()
 testscene.fire_main_thrusters(50)
 testscene.print()
-
-for engine in testship.engines:
-    engine[1].print()

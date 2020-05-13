@@ -42,7 +42,8 @@ class Vector:
             return False
 
     def spher_to_cart(self):
-        r, phi, theta = self.getval()
+        # r: radius, theta:inclination phi:azimuth
+        r, theta, phi = self.getval()
         x = r * sin(theta) * cos(phi)
         y = r * sin(theta) * sin(phi)
         z = r * cos(theta)
@@ -50,12 +51,13 @@ class Vector:
         return Vector(x, y, z)
 
     def cart_to_spher(self):
+        # r: radius, theta:inclination phi:azimuth
         x, y, z = self.getval()
         r = sqrt(x ** 2 + y ** 2 + z ** 2)
         phi = atan(y / x)
         theta = acos(z / r)
 
-        return Vector(r, phi, theta)
+        return Vector(r, theta, phi)
 
     def print(self):
         print(self.x, self.y, self.z)
