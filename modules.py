@@ -79,6 +79,7 @@ class Engine(Mod):
         self.effects = None
         self.propellant = None
         self.grid = None
+        self.mdot = None
 
     def scale_engine(self, propellant, thrust):
         engine = self
@@ -91,6 +92,7 @@ class Engine(Mod):
         engine.volume = 4 / 3 * pi * r ** 3 * 3  # arbitary scaling factor of 3
         engine.r = r
         engine.h = engine.volume / (pi * r ** 2)
+        self.mdot = self.thrust/self.ve
 
     def print(self):
         print(

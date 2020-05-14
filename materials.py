@@ -1,6 +1,8 @@
 from math import log10
 
+# standard atmospheric pressure,1bar,1E5pa
 sap = 1e5
+
 
 class Material(object):
     def __init__(self):
@@ -23,6 +25,9 @@ class Material(object):
         self.stdMP = None
         # standard Boiling Point
         self.stdBP = None
+
+    ## uses thermaldynamic data from NIST
+    ## Antoine equation
 
     # given tempreature solve for vapor pressure, pascal
     def _antoine_p__(self, t):

@@ -1,2 +1,3 @@
 name		,ve			,composition		,ratio		,twr	
 LH2-LOX		,4410		,Hydrogen|Oxygen	,2|1		,50
+SNTR-H2O	,4042		,Water				,1|0		,0.5

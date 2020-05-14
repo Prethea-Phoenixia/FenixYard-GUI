@@ -30,6 +30,9 @@ class Vector:
         x, y, z = self.getval()
         return Vector(x * num, y * num, z * num)
 
+    def __rmul__(self, num):
+        return self.__mul__(num)
+
     def __truediv__(self, m):
         x, y, z = self.getval()
         ans = Vector(x / m, y / m, z / m)
