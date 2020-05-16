@@ -6,6 +6,7 @@ from materials import Material, Mixture
 from modules import Tank, Engine
 from iohandler import readtxt, return_instance_from_list
 from ship import Ship
+from matrix import Matrix, lssq
 
 
 class State(object):
@@ -53,7 +54,7 @@ class State(object):
                         self.ort * eff_ve * (dT + (dT - m0 / sig_deltam) * log(m0 / m1))
                     )
 
-    def fire_rotational_thrusters(self, time, rot_vec):
+    def fire_rotational_thrusters(self, time, rot_desired_acc):
         relevent_enignes = []
         for engine, orientation in self.ship.engines:
             # vector result of vector f
@@ -61,9 +62,35 @@ class State(object):
             rvec = Vector(0, 0, self.ship.get_mod_pos(engine))
             # engine's torque.
             tq = cross(rvec, fvec)
-            if dot(tq, rot_vec) > 0:
-                relevent_enignes.append(engine)
-        print(relevent_enignes)
+            racc = tq / self.ship.moi
+            if dot(tq, rot_desired_acc) != 0:
+                relevent_enignes.append([engine, racc])
+
+        # solve the torque balancing problem.
+
+        pbl_matrix = Matrix(3, len(relevent_enignes))
+        xl, yl, zl = [], [], []
+        for engine, rot_acc in relevent_enignes:
+            x, y, z = rot_acc.getval()
+            xl.append(x)
+            yl.append(y)
+            zl.append(z)
+
+        pbl_matrix.mat = [xl, yl, zl]
+
+        o, p, q = rot_desired_acc.getval()
+
+        res_matrix = Matrix(3, 1)
+
+        res_matrix.mat = [[o], [p], [q]]
+
+        pbl_matrix.print()
+        print()
+        res_matrix.print()
+        print()
+
+        solution = lssq(pbl_matrix, res_matrix)
+        print(solution)
 
     def print(self):
         self.ship.print()
@@ -144,4 +171,4 @@ if __name__ == "__main__":
     testscene.fire_main_thrusters(400)
     testscene.print()
 
-    testscene.fire_rotational_thrusters(20, Vector(0, 0, 1))
+    testscene.fire_rotational_thrusters(20, Vector(1, 1, 0))

@@ -1,7 +1,6 @@
 from math import pi, sqrt
 from numerical import brents
 
-
 class Mod(object):
     def __init__(self):
         self.mass = None
@@ -21,6 +20,8 @@ class Tank(Mod):
 
         # width, equal to h-2r
         self.w = None
+
+        self.fillratio = None
 
     def print(self):
         print("{} tank made of {}".format(self.content.name, self.str.name))
@@ -67,7 +68,8 @@ class Tank(Mod):
         self.mass = brents(f, 0, pmass)
 
     def percentage(self):
-        return self.pmass / (self.volume * self.content.lqdensity)
+        self.fillratio = self.pmass / (self.volume * self.content.lqdensity)
+        return self.fillratio
 
 
 class Engine(Mod):

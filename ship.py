@@ -5,6 +5,23 @@ from modules import Tank, Engine
 from vector import Vector, dot
 from copy import copy
 
+from functools import reduce
+
+
+def rsetattr(obj, attr, val):
+    pre, _, post = attr.rpartition(".")
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
+# using wonder's beautiful simplification: https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-objects/31174427?noredirect=1#comment86638618_31174427
+
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return reduce(_getattr, [obj] + attr.split("."))
+
 
 class Ship(object):
     def __init__(self):
@@ -15,6 +32,7 @@ class Ship(object):
         self.str_acc_lim = 0
         self.mod_pos = []
         self.moi = 0
+        self.percentage = None
 
     # use the module passed as a protoype and copy it.
     def addmod(self, module):
@@ -41,6 +59,17 @@ class Ship(object):
         for eng in radials:
             spher = Vector(1, pi / 2, 2 * pi * radials.index(eng) / len(radials))
             self.engines.append([eng, spher.spher_to_cart()])
+
+    # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
+    # into [a,b,c,d]
+    def get_flat(self, attr):
+        queue = []
+        for stuff in getattr(self, attr):
+            if isinstance(stuff, list):
+                queue.extend(stuff)
+            else:
+                queue.append(stuff)
+        return queue
 
     def tally(self):
         # tally ship mass
@@ -94,6 +123,10 @@ class Ship(object):
 
         for mod in self.module:
             self.mod_pos.append(h_com - hcum[self.module.index(mod)])
+
+        for mod in self.get_flat("module"):
+            if isinstance(mod, Tank):
+                mod.percentage()
 
         # calculates moment of inertia on the x-y plane.
         self.moi = sum(m * r ** 2 for r, m in zip(self.mod_pos, masses)) + sum(
@@ -189,17 +222,6 @@ class Ship(object):
                         if mod in cluster:
                             return self.mod_pos[self.module.index(cluster)]
 
-    # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
-    # into [a,b,c,d]
-    def get_flat(self, attr):
-        queue = []
-        for stuff in getattr(self, attr):
-            if isinstance(stuff, list):
-                queue.extend(stuff)
-            else:
-                queue.append(stuff)
-        return queue
-
     def get_engine_orient(self, engine):
         for e, o in self.engines:
             if e == engine:
@@ -212,14 +234,49 @@ class Ship(object):
             if isinstance(po, list):
                 max_clustering = max(max_clustering, len(po))
 
-        def get_padding(curr_clustering):
-            return (max_clustering / 2 * 16) - (8 + 8 * (curr_clustering - 1))
+        def get_padding(curr_clustering, length=16):
+            return (max_clustering / 2 * 16) - (length / 2 * curr_clustering)
 
-        def pad(clustering):
+        def pad(clustering, length=16):
             i = 0
-            while i < get_padding(clustering):
-                print(" ", end="")
+            space = ""
+            while i < get_padding(clustering,length):
+                space += " "
                 i += 1
+            return space
+
+        # unconditionally draw ASCII art
+        # if attrs is not present in attribute of object
+        # assuming the attribute is passed as string
+        def uncond(pos, asciiart, attrs):
+            full_graph = ""
+            i = 0
+            for line in asciiart:
+                this_line = ""
+                for mod in pos:
+                    if attrs[i] is not None:
+                        try:
+                            this_line += str(line.format(rgetattr(mod, attrs[i])))
+                        except:
+                            this_line += str(line.format(attrs[i]))
+                    else:
+                        this_line += line
+                this_line = pad(len(pos), len(this_line) / len(pos)) + this_line + "\n"
+                full_graph += this_line
+                i += 1
+            print(full_graph)
+
+        # conditionally draw ASCII art illustrating stuff. useful for multiple
+        # representation of same type of module.
+        def cond(pos, asciiart1, asciiart2, attrs1, attrs2, reason):
+            if reason():
+                asciiart = asciiart1
+                attrs = attrs1
+            else:
+                asciiart = asciiart2
+                attrs = attrs2
+
+            uncond(pos, asciiart, attrs)
 
         # convert everything into nested list
         display_queue = []
@@ -231,50 +288,32 @@ class Ship(object):
 
         for pos in display_queue:
             if all(isinstance(x, Tank) for x in pos):
-                pad(len(pos))
-                for mod in pos:
-                    print("/¯¯¯¯¯¯¯¯¯¯¯¯¯¯\\", end="")
-                print("")
-                pad(len(pos))
-                for mod in pos:
-                    op = str("|  {:^10}  |".format(mod.content.name))
-                    print(op, end="")
-                print("")
-                pad(len(pos))
-                for mod in pos:
-                    op = str("|  {:^10.2f}  |".format(mod.percentage()))
-                    print(op, end="")
-                print("")
-                pad(len(pos))
-                for mod in pos:
-                    print("\\______________/", end="")
-                print("")
+
+                asciiarts = [
+                    "/¯¯¯¯¯¯¯¯¯¯¯¯¯¯\\",
+                    str("|  {:^10}  |"),
+                    str("|  {:^10.2f}  |"),
+                    "\\______________/",
+                ]
+                attrs = [None, "content.name", "fillratio", None]
+                uncond(pos, asciiarts, attrs)
 
             elif all(isinstance(x, Engine) for x in pos):
-                pad(len(pos))
-                for eng in pos:
-                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
-                        op = str("\\__{:^10}__/".format("Engine"))
+
+                def see_if_rcs():
+                    if all(
+                        self.get_engine_orient(x) == Vector(0, 0, 1) for x in pos
+                    ):
+                        return True
                     else:
-                        op = str("      {:_^4}      ".format("\\/"))
-                    print(op, end="")
-                print("")
-                pad(len(pos))
-                for eng in pos:
-                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
-                        # main thruster, firing toward the back:
-                        op = str("   /        \\   ")
-                    else:
-                        op = str("     >{:^4}<     ".format("RCS"))
-                    print(op, end="")
-                print("")
-                pad(len(pos))
-                for eng in pos:
-                    if self.get_engine_orient(eng) == Vector(0, 0, 1):
-                        op = str("  / {:^8} \\  ".format(eng.propellant.name))
-                    else:
-                        op = str("      {:¯^4}      ".format("/\\"))
-                    print(op, end="")
-                print("")
+                        return False
+
+                asciiart1 = ["\\__{:^10}__/", "   /        \\   ", "  / {:^8} \\  "]
+                asciiart2 = ["  {:_^4}  ", " >{:^4}< ", "  {:¯^4}  "]
+
+                attrs1 = ["Engine", None, "propellant.name"]
+                attrs2 = ["\\/", "RCS", "/\\"]
+
+                cond(pos, asciiart1, asciiart2, attrs1, attrs2, see_if_rcs)
 
         print("mass:{:.2f} kg".format(self.mass))

@@ -1,5 +1,6 @@
 # vector library.
 from math import sqrt, sin, cos, acos, atan
+from math import pi
 
 
 class Vector:
