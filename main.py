@@ -171,4 +171,4 @@ if __name__ == "__main__":
     testscene.fire_main_thrusters(400)
     testscene.print()
 
-    testscene.fire_rotational_thrusters(20, Vector(1, 1, 0))
+    testscene.fire_rotational_thrusters(20, Vector(0.01, 0.01, 0))
