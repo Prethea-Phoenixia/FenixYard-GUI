@@ -6,7 +6,7 @@ from materials import Material, Mixture
 from modules import Tank, Engine
 from iohandler import readtxt, return_instance_from_list
 from ship import Ship
-from matrix import Matrix, lssq
+from matrix import Matrix, lssq, nnls
 
 
 class State(object):
@@ -68,7 +68,7 @@ class State(object):
 
         # solve the torque balancing problem.
 
-        pbl_matrix = Matrix(3, len(relevent_enignes))
+        pbl_matrix = Matrix(3, 0)
         xl, yl, zl = [], [], []
         for engine, rot_acc in relevent_enignes:
             x, y, z = rot_acc.getval()
@@ -76,7 +76,10 @@ class State(object):
             yl.append(y)
             zl.append(z)
 
-        pbl_matrix.mat = [xl, yl, zl]
+
+        pbl_matrix.add_col(xl)
+        pbl_matrix.add_col(yl)
+        pbl_matrix.add_col(zl)
 
         o, p, q = rot_desired_acc.getval()
 
@@ -89,7 +92,7 @@ class State(object):
         res_matrix.print()
         print()
 
-        solution = lssq(pbl_matrix, res_matrix)
+        solution = nnls(pbl_matrix, res_matrix)
         print(solution)
 
     def print(self):

@@ -1,4 +1,5 @@
 from copy import copy, deepcopy
+from random import uniform
 
 
 class Matrix:
@@ -16,7 +17,7 @@ class Matrix:
         for row in self.mat:
             print("[", end="")
             for column in row:
-                print(" {:^8.1E}  ".format(column), end="")
+                print(" {:^8.1f}  ".format(column), end="")
             print("]")
 
     # prints an augmented matrix
@@ -26,9 +27,9 @@ class Matrix:
             i = 0
             for column in row:
                 if i == len(row) - 1:
-                    print("| {:^8.1E}  ".format(column), end="")
+                    print("| {:^8.1f}  ".format(column), end="")
                 else:
-                    print(" {:^8.1E}  ".format(column), end="")
+                    print(" {:^8.1f}  ".format(column), end="")
                 i += 1
             print("]")
 
@@ -100,6 +101,7 @@ class Matrix:
             return result
 
         else:
+            print(type(o))
             raise NotImplementedError
 
     def __add__(self, o):
@@ -195,6 +197,8 @@ class Matrix:
             i_max = pivots.index(max(pivots)) + k
 
             # Check for singular matrix
+            if A[i_max][k] == 0:
+                print(A)
             assert A[i_max][k] != 0, "Matrix is singular!"
 
             # Swap rows
@@ -242,6 +246,12 @@ class Matrix:
             result.mat[i].extend(ans.mat[i])
         return result
 
+    def poprandom(self):
+        for i in range(self.row):
+            for e in range(self.column):
+                self.mat[i][e] = uniform(0, 100)
+        return self
+
 
 def lssq(a, b):
     assert a.row == b.row and b.column == 1, "Size mismatch for A and b"
@@ -255,7 +265,7 @@ def lssq(a, b):
     return x
 
 
-def nnls(A, y, epsilon):
+def nnls(A, y, epsilon=1e-5):
     """
     A:        n         X:         Y:
         [   ,   ,   ]   [   ]   [   ]
@@ -291,11 +301,18 @@ def nnls(A, y, epsilon):
     w = A.transpose() * (y - A * x)
 
     while len(R) > 0 and w.max()[0] > epsilon:
-        j = w.max()[1:2][0]
+        w_largest = None
+        for j_c in R:
+            if w_largest is None or w.mat[j_c][0] > w_largest:
+                j = j_c
+                w_largest = w.mat[j_c][0]
 
-        R.pop(j)
-
+        # remove index of wmax from R
+        R.pop(R.index(j))
+        R.sort()
+        # add index to P
         P.append(j)
+        P.sort()
 
         Ap = Matrix(m, len(P))
         e = 0
@@ -313,48 +330,76 @@ def nnls(A, y, epsilon):
 
         sp = (((Ap.transpose()) * Ap).inverse()) * (Ap.transpose()) * y
 
-        i = 0
-        for row in s.mat:
+        sr = 0
+        e = 0
+        for i in range(0, n):
             if i in P:
-                s.mat[i] = sp.mat[0]
-            i += 1
-
-        i = 0
-        for row in s.mat:
-            if i in R:
-                s.mat[i] = [0]
-            i += 1
+                s.mat[i][0] = sp.mat[e][0]
+                e += 1
+            elif i in R:
+                s.mat[i][0] = sr
 
         while sp.min()[0] <= 0:
-            minalp = None
+            print("innerloop")
+            minalp = 1
+            
             for p in P:
                 if s.mat[p][0] <= 0:
+                    if x.mat[p][0] == s.mat[p][0]:
+                        minalp = 0
+                        break
                     curr_alp = x.mat[p][0] / (x.mat[p][0] - s.mat[p][0])
-                    if minalp is None or curr_alp < minalp:
+                    if curr_alp < minalp:
                         minalp = curr_alp
+
+            print(minalp)
 
             alpha = minalp
             x = x + (s - x) * alpha
             for p in P:
-                if x[p][0] == 0:
-                    R.pop(p)
-                    P.append(p)
+                if x.mat[p][0] == 0:
+                    R.append(p)
+                    R.sort()
+                    P.pop(P.index(p))
+                    P.sort()
+
+            # updates Ap
+            Ap = Matrix(m, len(P))
+            e = 0
+            for val_row in A.mat:
+                i = 0
+                i_o = 0
+                for val in val_row:
+                    if i_o in P:
+                        Ap.mat[e][i] = val
+                        i += 1
+                    i_o += 1
+                e += 1
+
+            print("A")
+            A.print()
+            print("Ap")
+            Ap.print()
+            print("P")
+            print(p)
+
+            (Ap.transpose()*Ap).print()
 
             sp = (((Ap.transpose()) * Ap).inverse()) * (Ap.transpose()) * y
 
-            i = 0
-            for row in s.mat:
+            e = 0
+            for i in range(0, n):
                 if i in P:
-                    s.mat[i] = sp.mat[0]
-                i += 1
+                    s.mat[i][0] = sp.mat[e][0]
+                    e += 1
+                elif i in R:
+                    s.mat[i][0] = sr
 
-            i = 0
-            for row in s.mat:
-                if i in R:
-                    s.mat[i] = [0]
-                i += 1
+            print("s")
+            s.print()
+            input()
 
-        x.mat = s.mat
+        x.mat = deepcopy(s.mat)
         w = A.transpose() * (y - A * x)
 
     return [ans[0] for ans in x.mat]
@@ -376,4 +421,47 @@ if __name__ == "__main__":
     print(lssq(a, b))
     print()
     print("testing NNLS")
-    print(nnls(a, b, 1e-5))
+    print(nnls(a, b))
+    print()
+    print("random tests for inner loop verification")
+    c = Matrix(3, 2)
+    d = Matrix(3, 1)
+    # minimize ||cx-d||22
+    while True:
+        print("first generated matrix")
+        c.poprandom().print()
+        print("second generated matrix")
+        d.poprandom().print()
+
+        print("nnls")
+        res_list = nnls(c, d)
+        res = Matrix(2, 0)
+        res.add_col(res_list)
+        res.print()
+        print(res_list)
+
+        print("verifying: CX")
+        (c * res).print()
+        print("|cX-d|^1")
+        delta = c * res - d
+        delta_sum = 0
+        for row in delta.mat:
+            delta_sum += row[0] ** 2
+
+        print("delta**2         :{:.4f}".format(delta_sum))
+
+        reverse_result = res_list[::-1]
+        rev = Matrix(2, 0)
+        rev.add_col(reverse_result)
+        reverse_delta = c * rev - d
+
+        delta_sum_rev = 0
+        for row in reverse_delta.mat:
+            delta_sum_rev += row[0] ** 2
+        print("reversed delta**2:{:.4f}".format(delta_sum_rev))
+
+        if delta_sum_rev < delta_sum:
+            print("Warning!")
+            input()
+
+        input()
