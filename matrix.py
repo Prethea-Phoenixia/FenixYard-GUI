@@ -17,7 +17,7 @@ class Matrix:
         for row in self.mat:
             print("[", end="")
             for column in row:
-                print(" {:^8.1f}  ".format(column), end="")
+                print(" {:^8.1E}  ".format(column), end="")
             print("]")
 
     # prints an augmented matrix
@@ -27,9 +27,9 @@ class Matrix:
             i = 0
             for column in row:
                 if i == len(row) - 1:
-                    print("| {:^8.1f}  ".format(column), end="")
+                    print("| {:^8.1E}  ".format(column), end="")
                 else:
-                    print(" {:^8.1f}  ".format(column), end="")
+                    print(" {:^8.1E}  ".format(column), end="")
                 i += 1
             print("]")
 
@@ -238,7 +238,7 @@ class Matrix:
 
         return res_matrix
 
-    def mk_aug_self(self, ans):
+    def mk_aug_mtx(self, ans):
         assert self.row == ans.row and ans.column == 1
         result = Matrix(self.row, self.column + 1)
         result.mat = deepcopy(self.mat)
@@ -340,9 +340,7 @@ def nnls(A, y, epsilon=1e-5):
                 s.mat[i][0] = sr
 
         while sp.min()[0] <= 0:
-            print("innerloop")
             minalp = 1
-            
             for p in P:
                 if s.mat[p][0] <= 0:
                     if x.mat[p][0] == s.mat[p][0]:
@@ -383,7 +381,7 @@ def nnls(A, y, epsilon=1e-5):
             print("P")
             print(p)
 
-            (Ap.transpose()*Ap).print()
+            (Ap.transpose() * Ap).print()
 
             sp = (((Ap.transpose()) * Ap).inverse()) * (Ap.transpose()) * y
 
@@ -395,14 +393,17 @@ def nnls(A, y, epsilon=1e-5):
                 elif i in R:
                     s.mat[i][0] = sr
 
-            print("s")
-            s.print()
-            input()
-
         x.mat = deepcopy(s.mat)
         w = A.transpose() * (y - A * x)
 
     return [ans[0] for ans in x.mat]
+
+
+def lsnm(A, y):
+    assert A.row == y.row and y.column == 1
+    xln = Matrix(A.row, 1)
+    xln = A.transpose() * (A * A.transpose()).inverse() * y
+    return [x[0] for x in xln.mat]
 
 
 if __name__ == "__main__":
@@ -411,8 +412,11 @@ if __name__ == "__main__":
     a.mat = [[0.0372, 0.2869], [0.6861, 0.7071], [0.6233, 0.6245], [0.6344, 0.6170]]
     b.mat = [[0.8587], [0.1781], [0.0747], [0.8405]]
 
+    print("test least norm")
+    print(lsnm(a,b))
+
     print("reference starting matrix")
-    d = a.mk_aug_self(b)
+    d = a.mk_aug_mtx(b)
     d.print_aug()
     print("reference solution")
     print("constrained [0,0.6929] unconstrained [-2.5627,3.1108]")
@@ -438,10 +442,7 @@ if __name__ == "__main__":
         res = Matrix(2, 0)
         res.add_col(res_list)
         res.print()
-        print(res_list)
 
-        print("verifying: CX")
-        (c * res).print()
         print("|cX-d|^1")
         delta = c * res - d
         delta_sum = 0

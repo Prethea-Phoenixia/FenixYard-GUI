@@ -6,7 +6,8 @@ from materials import Material, Mixture
 from modules import Tank, Engine
 from iohandler import readtxt, return_instance_from_list
 from ship import Ship
-from matrix import Matrix, lssq, nnls
+from matrix import Matrix, lssq, nnls, lsnm
+from utils import euler_rot
 
 
 class State(object):
@@ -17,7 +18,7 @@ class State(object):
         self.ship = None
         # world coordinate.
         self.pos = Vector(0, 0, 0)
-        self.ort = Vector(1, 0, 0)
+        self.ort = Vector(0, 0, 1)
         self.vel = Vector(0, 0, 0)
         self.angvel = Vector(0, 0, 0)
 
@@ -55,45 +56,66 @@ class State(object):
                     )
 
     def fire_rotational_thrusters(self, time, rot_desired_acc):
-        relevent_enignes = []
-        for engine, orientation in self.ship.engines:
-            # vector result of vector f
-            fvec = orientation * engine.thrust
-            rvec = Vector(0, 0, self.ship.get_mod_pos(engine))
-            # engine's torque.
-            tq = cross(rvec, fvec)
-            racc = tq / self.ship.moi
-            if dot(tq, rot_desired_acc) != 0:
-                relevent_enignes.append([engine, racc])
 
-        # solve the torque balancing problem.
+        tanks = self.ship.get_tanks()
+        dT = State.deltaT
 
-        pbl_matrix = Matrix(3, 0)
-        xl, yl, zl = [], [], []
-        for engine, rot_acc in relevent_enignes:
-            x, y, z = rot_acc.getval()
-            xl.append(x)
-            yl.append(y)
-            zl.append(z)
+        for t in range(0, time, dT):
+            relevent_enignes = []
+            for engine, orientation in self.ship.engines:
+                # vector result of vector f
+                fvec = orientation * engine.thrust
+                rvec = Vector(0, 0, self.ship.get_mod_pos(engine))
+                # engine's torque.
+                tq = cross(rvec, fvec)
+                racc = tq / self.ship.moi
+                if dot(tq, rot_desired_acc) != 0:
+                    relevent_enignes.append([engine, racc])
 
+            # solve the torque balancing problem.
 
-        pbl_matrix.add_col(xl)
-        pbl_matrix.add_col(yl)
-        pbl_matrix.add_col(zl)
+            pbl_matrix = Matrix(3, 3)
+            xl, yl, zl = [], [], []
+            for engine, rot_acc in relevent_enignes:
+                x, y, z = rot_acc.getval()
+                xl.append(x)
+                yl.append(y)
+                zl.append(z)
 
-        o, p, q = rot_desired_acc.getval()
+            pbl_matrix.mat[0] = xl
+            pbl_matrix.mat[1] = yl
+            pbl_matrix.mat[2] = zl
 
-        res_matrix = Matrix(3, 1)
+            o, p, q = rot_desired_acc.getval()
 
-        res_matrix.mat = [[o], [p], [q]]
+            res_matrix = Matrix(3, 1)
 
-        pbl_matrix.print()
-        print()
-        res_matrix.print()
-        print()
+            res_matrix.mat = [[o], [p], [q]]
 
-        solution = nnls(pbl_matrix, res_matrix)
-        print(solution)
+            solution = nnls(pbl_matrix, res_matrix)
+
+            # if the desired angular acceleration is not attainable, try very hard
+            if max(solution) > 1:
+                norm_solution = [i / max(solution) for i in solution]
+            else:
+                norm_solution = solution
+
+            # burn every RCS engine
+            i = 0
+            for engine, racc in relevent_enignes:
+                self.ship.burn(engine, tanks, dT * norm_solution[i])
+                self.angvel += racc * dT * norm_solution[i]
+                i += 1
+
+            euler_vec = self.angvel * dT
+
+            self.ort = euler_rot(self.ort,euler_vec)
+
+            print("angular velocity")
+            self.angvel.print()
+            print("orientation:")
+            self.ort.print()
+            print()
 
     def print(self):
         self.ship.print()
@@ -171,7 +193,9 @@ if __name__ == "__main__":
     testscene = State()
     testscene.ship = testship
     testscene.print()
-    testscene.fire_main_thrusters(400)
+    testscene.fire_main_thrusters(40)
     testscene.print()
 
-    testscene.fire_rotational_thrusters(20, Vector(0.01, 0.01, 0))
+    testscene.fire_rotational_thrusters(2, Vector(1, 1, 0))
+    testscene.fire_rotational_thrusters(2, Vector(-1, -1, 0))
+    testscene.print()
