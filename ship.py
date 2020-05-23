@@ -240,7 +240,7 @@ class Ship(object):
         def pad(clustering, length=16):
             i = 0
             space = ""
-            while i < get_padding(clustering,length):
+            while i < get_padding(clustering, length):
                 space += " "
                 i += 1
             return space
@@ -292,18 +292,18 @@ class Ship(object):
                 asciiarts = [
                     "/¯¯¯¯¯¯¯¯¯¯¯¯¯¯\\",
                     str("|  {:^10}  |"),
-                    str("|  {:^10.2f}  |"),
+                    str("|  {:^10.1%}  |"),
+                    str("|  {:^7.1e} kg  |"),
                     "\\______________/",
                 ]
-                attrs = [None, "content.name", "fillratio", None]
+
+                attrs = [None, "content.name", "fillratio","pmass", None]
                 uncond(pos, asciiarts, attrs)
 
             elif all(isinstance(x, Engine) for x in pos):
 
                 def see_if_rcs():
-                    if all(
-                        self.get_engine_orient(x) == Vector(0, 0, 1) for x in pos
-                    ):
+                    if all(self.get_engine_orient(x) == Vector(0, 0, 1) for x in pos):
                         return True
                     else:
                         return False

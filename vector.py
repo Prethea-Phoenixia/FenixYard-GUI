@@ -27,6 +27,12 @@ class Vector:
         ans = Vector(x0 + x1, y0 + y1, z0 + z1)
         return ans
 
+    def __sub__(self, o):
+        x0, y0, z0 = self.getval()
+        x1, y1, z1 = o.getval()
+        ans = Vector(x0 - x1, y0 - y1, z0 - z1)
+        return ans
+
     def __mul__(self, num):
         x, y, z = self.getval()
         return Vector(x * num, y * num, z * num)

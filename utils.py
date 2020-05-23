@@ -1,6 +1,11 @@
 from vector import Vector
 from matrix import Matrix
-from math import sin, cos, pi
+from math import sin, cos, pi, sqrt
+
+
+def clamp(val, minima, maxima):
+    assert minima < maxima
+    return max(min(val, maxima), minima)
 
 
 def orth_rot(vector, thetax, thetay, thetaz):
@@ -28,10 +33,164 @@ def euler_rot(vector, euler_vector):
     return Vector(x, y, z)
 
 
+def asciiplt(vector, return_string=True):
+    horz = 30
+    vert = 9
+
+    xtra = 5
+    ytra = 1
+    # extra padding.
+
+    z_length = int(vert * 2 / 3)
+    center_horz_pos = int(horz * 1 / 3)
+
+    x, y, z = vector.getval()
+    length = vector.norm()
+    if length == 0:
+        scale = 1
+    else:
+        scale = sqrt(vert ** 2 + (horz / 2) ** 2) / length / 3
+
+    x, y, z = x * scale, y * scale, z * scale
+
+    x_axis_syb = "/"
+    x_neg_axis_syb = "."
+    y_axis_syb = "\u2310"
+    y_neg_axis_syb = "."
+    z_axis_syb = "|"
+    z_neg_axis_syb = "."
+
+    drawing = []
+    for i in range(0, z_length):
+        if i == z_length - 1:
+            line = (
+                y_neg_axis_syb * center_horz_pos
+                + y_axis_syb * (horz - center_horz_pos - 1)
+                + "Y"
+            )
+        elif i == 0:
+            line = " " * (center_horz_pos - 1) + "Z" + z_axis_syb
+            line += " " * (z_length - i - 2) + x_neg_axis_syb
+        else:
+            line = " " * center_horz_pos + z_axis_syb
+            line += " " * (z_length - i - 2) + x_neg_axis_syb
+        # pad out xtra spaces to the right..
+        drawing.append("{0:<{1}}".format(line, horz + xtra))
+    for i in range(0, vert - z_length):
+        if i == vert - z_length - 1:
+            line = (
+                " " * (center_horz_pos - i - 2)
+                + "X"
+                + x_axis_syb
+                + " " * i
+                + z_neg_axis_syb
+            )
+        else:
+            line = (
+                " " * (center_horz_pos - i - 1) + x_axis_syb + " " * i + z_neg_axis_syb
+            )
+        drawing.append("{0:<{1}}".format(line, horz + xtra))
+
+    # pad out xtra lines down.
+    for i in range(0, ytra):
+        drawing.append("{0:^{1}}".format(" ", horz + xtra))
+
+    def mark_pos(x, y, z, val):
+        # map x,y,z to the axis.
+        y_ascii = z_length - int(z) + int(x * sqrt(2) / 2) - 1
+        x_ascii = center_horz_pos + int(y * 2) - int(x * sqrt(2) / 2)
+
+        # limit the x axis to be greater than 0
+        x_ascii = int(clamp(x_ascii, 0, horz - 1))
+        y_ascii = int(clamp(y_ascii, 0, vert - 1))
+
+        line = drawing[y_ascii]
+
+        if len(line) < x_ascii:
+            diff = x_ascii - len(line)
+            drawing[y_ascii] = line + " " * diff + val
+        else:
+            drawing[y_ascii] = (
+                drawing[y_ascii][:x_ascii] + val + drawing[y_ascii][x_ascii + 1 :]
+            )
+
+        return x_ascii, y_ascii
+
+    def edit_pos(x, y, val):
+        x = clamp(x, 0, horz - 1)
+        y = clamp(y, 0, vert - 1)
+        line = drawing[y]
+        if len(line) < x:
+            diff = x - len(line)
+            drawing[y] = line + " " * diff + val
+        else:
+            drawing[y] = drawing[y][:x] + val + drawing[y][(x + len(val)) :]
+
+    # draw a line.
+    def draw_line(vec0, vec1):
+        x0, y0, z0 = vec0.getval()
+        x1, y1, z1 = vec1.getval()
+
+        delta = vec1 - vec0
+
+        # breakdown of difference vector.
+        dx, dy, dz = delta.getval()
+        sigma = delta.norm()
+        # get the step size!
+        if sigma == 0:
+            x_r, y_r, z_r = 0, 0, 0
+        else:
+            x_r, y_r, z_r = dx / sigma, dy / sigma, dz / sigma
+
+        # we should fill one point every distance = 1 (or distance = scale as displayed)
+        # so as to be as dense as possible.
+
+        if abs(dz) == max(abs(n) for n in delta.getval()):
+            line = ":"
+        else:
+            line = "."
+
+        for i in range(1, int(sigma)):
+            xi = x0 + x_r * i
+            yi = y0 + y_r * i
+            zi = z0 + z_r * i
+            mark_pos(xi, yi, zi, line)
+
+    # horizontal plane indicator
+    mark_pos(x, y, 0, "*")
+    indicator = Vector(x, y, 0)
+    # places the marker
+    xo, yo = mark_pos(x, y, z, "o")
+    draw_line(vector * scale, indicator)
+
+    capx = str("x {:>5.1e}".format(x / scale))
+    capy = str("y {:>5.1e}".format(y / scale))
+    capz = str("z {:>5.1e}".format(z / scale))
+
+    # make sure the caption does not exceed the drawing space.
+    start = clamp(yo - 1, 0, vert - 3)
+    edit_pos(xo + 2, start, capx)
+    edit_pos(xo + 2, start + 1, capy)
+    edit_pos(xo + 2, start + 2, capz)
+
+    line_str = ""
+    for line in drawing:
+        line_str += line + "\n"
+
+    # return the string version
+    if return_string:
+        return line_str
+    # return the list (line by line) version
+    else:
+        return drawing
+
+
 if __name__ == "__main__":
-    vector = Vector(0, 0, 1)
-    euler_vec = Vector(0,pi/2,pi/2)
+    vector = Vector(-2, 3, -40)
+    euler_vec = Vector(0, pi / 2, pi / 2)
     result = orth_rot(vector, pi / 2, 0, pi / 2)
     result.print()
-    result2 = euler_rot(vector,euler_vec)
+    result2 = euler_rot(vector, euler_vec)
     result2.print()
+    vector.print()
+    print(asciiplt(vector))

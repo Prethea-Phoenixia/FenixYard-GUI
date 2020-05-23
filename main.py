@@ -7,7 +7,7 @@ from modules import Tank, Engine
 from iohandler import readtxt, return_instance_from_list
 from ship import Ship
 from matrix import Matrix, lssq, nnls, lsnm
-from utils import euler_rot
+from utils import euler_rot, asciiplt
 
 
 class State(object):
@@ -109,13 +109,14 @@ class State(object):
 
             euler_vec = self.angvel * dT
 
-            self.ort = euler_rot(self.ort,euler_vec)
-
+            self.ort = euler_rot(self.ort, euler_vec)
+            """
             print("angular velocity")
             self.angvel.print()
             print("orientation:")
             self.ort.print()
             print()
+            """
 
     def print(self):
         self.ship.print()
@@ -124,16 +125,13 @@ class State(object):
                 self.pos.x, self.pos.y, self.pos.z
             )
         )
-        print(
-            "velocity    {:^6.1f} {:^6.1f} {:^6.1f}".format(
-                self.vel.x, self.vel.y, self.vel.z
-            )
-        )
-        print(
-            "orientation {:^6.1f} {:^6.1f} {:^6.1f}".format(
-                self.ort.x, self.ort.y, self.ort.z
-            )
-        )
+
+        pos = asciiplt(self.pos, return_string=False)
+        vel = asciiplt(self.vel, return_string=False)
+        ort = asciiplt(self.ort, return_string=False)
+
+        for i in range(0, len(pos)):
+            print(pos[i] + vel[i] + ort[i])
 
 
 if __name__ == "__main__":
@@ -196,6 +194,6 @@ if __name__ == "__main__":
     testscene.fire_main_thrusters(40)
     testscene.print()
 
-    testscene.fire_rotational_thrusters(2, Vector(1, 1, 0))
-    testscene.fire_rotational_thrusters(2, Vector(-1, -1, 0))
+    testscene.fire_rotational_thrusters(30, Vector(1, 1, 0))
+    testscene.fire_rotational_thrusters(30, Vector(-1, -1, 0))
     testscene.print()
