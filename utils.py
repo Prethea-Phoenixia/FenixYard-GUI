@@ -33,12 +33,10 @@ def euler_rot(vector, euler_vector):
     return Vector(x, y, z)
 
 
-def asciiplt(vector, return_string=True):
-    horz = 30
-    vert = 9
+def asciiplt(vector, return_string=True, horz=30, vert=9):
 
-    xtra = 5
-    ytra = 1
+    xtra = 0
+    ytra = 0
     # extra padding.
 
     z_length = int(vert * 2 / 3)

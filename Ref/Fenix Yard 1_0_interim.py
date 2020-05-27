@@ -342,7 +342,7 @@ def ablationNuke(v, Mp, Ep, z, R, Ha, rhoa, Opmod, C):
         balance = result_x - x
         return balance
 
-    ans_x, steps = brents(layerDepth, 0, 1, 150, 1e-15)
+    ans_x, steps = brents(layerDepth, 0, 1, 150, 1e-5)
     assert steps < 150
     ans = integrate(ans_x)
 
