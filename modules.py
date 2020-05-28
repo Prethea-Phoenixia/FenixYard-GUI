@@ -103,3 +103,6 @@ class Engine(Mod):
             )
         )
 
+class Rcs(Engine):
+    def __init__(self):
+        super().__init__()

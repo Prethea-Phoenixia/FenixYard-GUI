@@ -1,11 +1,13 @@
 from math import pi
 
-from modules import Tank, Engine
+from modules import Tank, Engine, Rcs
 
 from vector import Vector, dot
 from copy import copy
 
 from functools import reduce
+
+from gui import combinelines
 
 
 def rsetattr(obj, attr, val):
@@ -228,6 +230,7 @@ class Ship(object):
                 return o
 
     def print(self):
+        # debugging diagram.
         print("ship diagram:")
         max_clustering = 0
         for po in self.module:
@@ -297,7 +300,7 @@ class Ship(object):
                     "\\______________/",
                 ]
 
-                attrs = [None, "content.name", "fillratio","pmass", None]
+                attrs = [None, "content.name", "fillratio", "pmass", None]
                 uncond(pos, asciiarts, attrs)
 
             elif all(isinstance(x, Engine) for x in pos):
@@ -317,3 +320,107 @@ class Ship(object):
                 cond(pos, asciiart1, asciiart2, attrs1, attrs2, see_if_rcs)
 
         print("mass:{:.2f} kg".format(self.mass))
+
+    def diagram(self):
+        def makegraph(*args):
+            result = []
+            for arg in args:
+                result.append(arg)
+            return result
+
+        # RCS graphics:
+        """
+          v
+        >| |<
+          ^
+        """
+
+        rcs = makegraph("  v  ", ">| |<", "  ^  ")
+
+        # engine graphics
+        """
+        \\___/
+         /   \
+        /     \
+        """
+
+        eng = makegraph(" \\___/", " /   \\ ", "/     \\")
+
+        # tank graphics
+        """
+        /¯¯¯\\
+        |   |
+        |   |
+        \\___/
+        """
+
+        tank = makegraph("/¯¯¯\\", "|   |", "|   |", "\\___/")
+        graph_dict = {Tank: tank, Rcs: rcs, Engine: eng}
+        len_dict = {Tank: 5, Rcs: 5, Engine: 7}
+        height_dict = {Tank: 4, Rcs: 3, Engine: 3}
+
+        # find the largest length.
+
+        max_length = 0
+        height = 0
+        for pos in self.module:
+            length = 0
+            if isinstance(pos, list):
+                for mod in pos:
+                    length += len_dict[mod.__class__]
+                height += height_dict[mod.__class__]
+            else:
+                length += len_dict[pos.__class__]
+                height += height_dict[pos.__class__]
+            if length > max_length:
+                max_length = length
+
+        # axis of symmetry is between characters:
+        centerline = max_length // 2
+
+        graph = str(" " * max_length + "\n") * height
+
+        graph_lines = graph.splitlines()
+
+        height = 0
+
+        for pos in self.module:
+            pad_to_left = 0
+
+            if isinstance(pos, list):
+                for mod in pos:
+                    curr_height = height_dict[mod.__class__]
+                    pad_to_left = (len(pos) // 2 - pos.index(mod)) * len_dict[
+                        mod.__class__
+                    ] + len(pos) % 2 * len_dict[mod.__class__] // 2
+                    start = centerline - pad_to_left
+                    end = centerline - pad_to_left + len_dict[mod.__class__]
+                    graph_index = 0
+                    for i in range(height, height + height_dict[mod.__class__]):
+                        graph_lines[i] = (
+                            graph_lines[i][:start]
+                            + graph_dict[mod.__class__][graph_index]
+                            + graph_lines[i][end:]
+                        )
+
+                        graph_index += 1
+            else:
+                curr_height = height_dict[pos.__class__]
+                pad_to_left = len_dict[pos.__class__] // 2
+                start = centerline - pad_to_left
+                end = centerline - pad_to_left + len_dict[pos.__class__]
+                graph_index = 0
+                for i in range(height, height + height_dict[pos.__class__]):
+                    graph_lines[i] = (
+                        graph_lines[i][:start]
+                        + graph_dict[pos.__class__][graph_index]
+                        + graph_lines[i][end:]
+                    )
+
+                    graph_index += 1
+
+            height += curr_height
+
+            graph = combinelines(graph_lines)
+
+        return graph

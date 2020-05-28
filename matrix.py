@@ -182,6 +182,18 @@ class Matrix:
             row.pop(pos)
         self.column -= 1
 
+    def del_row(self, pos):
+        result = []
+        i = 0
+        for row in self.mat:
+            if i == pos:
+                continue
+            else:
+                result.append(row)
+            i += 1
+        self.mat = result
+        self.row -= 1
+
     # solves an augmented matrix using gausian elimination
     def gauss(self):
         A = self.mat
@@ -238,13 +250,27 @@ class Matrix:
 
         return res_matrix
 
-    def mk_aug_mtx(self, ans):
+    def aug(self, ans):
         assert self.row == ans.row and ans.column == 1
         result = Matrix(self.row, self.column + 1)
         result.mat = deepcopy(self.mat)
         for i in range(0, self.row):
             result.mat[i].extend(ans.mat[i])
         return result
+
+    def deaug(self):
+        l, r = Matrix(self.row, self.column - 1), Matrix(self.row, 1)
+        i = 0
+        for row in self.mat:
+            e = 0
+            for col in row:
+                if e != len(row) - 1:
+                    l.mat[i][e] = col
+                else:
+                    r.mat[i][0] = col
+                e += 1
+            i += 1
+        return l, r
 
     def poprandom(self):
         for i in range(self.row):
@@ -406,17 +432,39 @@ def lsnm(A, y):
     return [x[0] for x in xln.mat]
 
 
+def vec_to_pbl_matrix(result, args):
+    ansmtx = Matrix(3, 0)
+    ansmtx.add_col(result.getval())
+    pblmtx = Matrix(3, 0)
+    for arg in args:
+        pblmtx.add_col(arg.getval())
+
+    pop_index = 0
+    for row in pblmtx.mat:
+        if all(val == 0 for val in row):
+            ansmtx.del_row(pop_index)
+            pblmtx.del_row(pop_index)
+        pop_index += 1
+
+    return pblmtx.aug(ansmtx)
+
+
 if __name__ == "__main__":
-    a = Matrix(4, 2)
-    b = Matrix(4, 1)
-    a.mat = [[0.0372, 0.2869], [0.6861, 0.7071], [0.6233, 0.6245], [0.6344, 0.6170]]
+    a = Matrix(5, 2)
+    b = Matrix(5, 1)
+    a.mat = [
+        [0.0372, 0.2869],
+        [0.6861, 0.7071],
+        [0.6233, 0.6245],
+        [0.6344, 0.6170],
+    ]
     b.mat = [[0.8587], [0.1781], [0.0747], [0.8405]]
 
     print("test least norm")
-    print(lsnm(a,b))
+    print(lsnm(a, b))
 
     print("reference starting matrix")
-    d = a.mk_aug_mtx(b)
+    d = a.aug(b)
     d.print_aug()
     print("reference solution")
     print("constrained [0,0.6929] unconstrained [-2.5627,3.1108]")
