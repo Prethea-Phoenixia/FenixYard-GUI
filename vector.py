@@ -99,3 +99,7 @@ if __name__ == "__main__":
     print((a + b).unit().norm())
     print(a == b)
     print(a == a)
+
+    z = Vector(1, 0, 0)
+    f = Vector(1, 1, 0)
+    print(theta(z, f)/pi*180)

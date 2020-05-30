@@ -1,14 +1,7 @@
 from os import system
 from time import sleep
 from msvcrt import getch
-
-# reverse operations of string.splitline()
-def combinelines(list_of_string, eol="\n"):
-    len_org = len(list_of_string[0])
-    result = ""
-    for i in list_of_string:
-        result += i[0:len_org] + eol
-    return result
+from utils import combinelines
 
 
 # window class. meant to handle general calls.

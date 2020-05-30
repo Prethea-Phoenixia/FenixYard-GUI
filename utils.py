@@ -183,6 +183,29 @@ def asciiplt(vector, return_string=True, horz=30, vert=9):
         return drawing
 
 
+# reverse operations of string.splitline()
+def combinelines(list_of_string, eol="\n"):
+    len_org = len(list_of_string[0])
+    result = ""
+    for i in list_of_string:
+        result += i[0:len_org] + eol
+    return result
+
+
+def solve_quadra(a, b, c):
+    if a == 0:
+        return -c / b
+    delta = b ** 2 - 4 * a * c
+    if delta > 0:
+        x1 = (-b + sqrt(delta)) / (2 * a)
+        x2 = (-b - sqrt(delta)) / (2 * a)
+        return x1, x2
+    elif delta == 0:
+        return -b / (2 * a)
+    else:
+        return None
+
+
 if __name__ == "__main__":
     vector = Vector(-2, 3, -40)
     euler_vec = Vector(0, pi / 2, pi / 2)
