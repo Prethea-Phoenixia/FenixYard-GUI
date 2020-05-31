@@ -56,6 +56,7 @@ class State(object):
         engine_burntimes = nnls(l, r)
 
         i = 0
+
         deltav = Vector(0, 0, 0)
         deltaw = Vector(0, 0, 0)
         for engine, ort in myShip.engines:
@@ -69,12 +70,13 @@ class State(object):
             i += 1
 
         # assuming mostly constant-acceleration.(reasonable assumption under small enough dt)
-        self.pos += self.vel * dT + 1 / 2 * deltav * dT ** 2
         euler_vec = self.angvel * dT + 1 / 2 * deltaw * dT ** 2
-
         self.ort = euler_rot(self.ort, euler_vec).unit()
 
-        self.vel += deltav
+        self.pos += self.vel * dT + 1 / 2 * deltav.norm() * dT ** 2 * self.ort
+
+        # translate deltav (in ship coordinate space) into world coordinate space.
+        self.vel += deltav.norm() * self.ort
         self.angvel += deltaw
 
         myOrder.report(deltav, deltaw, dT)
@@ -119,23 +121,24 @@ class Orders:
         self.ort_tgt = scene.ort
         self.ort_stt = scene.ort
         self.max_ang_acc = 1  # 1 rad/s^2
-        self.i = 0
         scene.order = self
 
-    def maintain_hdg(self):
-        # order ship to maintain heading:
-        self.des_ang_vel_c = Vector(0, 0, 0)
+    # defunct.
+    def cancel_angvel(self):
+        # order the ship to gradually go to full stop.
+        self.des_ang_vel_c = -1 * self.scene.angvel
 
     def maintain_vel(self):
+        self.cancel_angvel()
         self.des_vel_c = Vector(0, 0, 0)
 
     def burn(self, dv):
         # order ship to burn along current heading.
-        self.maintain_hdg()
+        self.cancel_angvel()
         self.des_vel_c = Vector(0, 0, dv)
 
     def translate(self, direction, dv):
-        self.maintain_hdg()
+        self.cancel_angvel()
         self.des_vel_c = direction * dv
 
     def rotate(self, direction, rad):
@@ -143,8 +146,6 @@ class Orders:
         # targeted orientation.
         self.ort_stt = self.scene.ort
         self.ort_tgt = euler_rot(self.scene.ort, direction.unit() * rad).unit()
-        self.ort_stt.print()
-        self.ort_tgt.print()
 
     def getorder(self):
         return self.des_vel_c, self.des_ang_vel_c
@@ -153,55 +154,54 @@ class Orders:
         self.des_vel_c -= accomplished_vel_c
         self.des_ang_vel_c -= accomplished_ang_vel_c
 
+        acc = min(self.max_ang_acc, accomplished_ang_vel_c.norm() / pulse_time)
+
         # updates des_ang_vel_c according to orientation target.
         # delta:angle to target
         delta = theta(self.ort_tgt, self.scene.ort)
-        acc = min(self.max_ang_acc, accomplished_ang_vel_c.norm() / pulse_time)
+        lastdelta = theta(
+            self.ort_tgt,
+            euler_rot(self.scene.ort, (accomplished_vel_c * pulse_time * -1)),
+        )
+        if delta > lastdelta:
+            self.ort_stt = self.scene.ort
+
         if delta > 0:
             if accomplished_ang_vel_c.norm() == 0:
                 braking_time = 0
             else:
                 braking_time = self.scene.angvel.norm() / acc
             # required angle for full stop
-            eta = braking_time ** 2 * acc / 2
-            # acceleration phase
+            eta = braking_time ** 2 * acc / 2 + 1 / 180 * pi
             phase = None
-            phi = theta(self.ort_stt, self.scene.ort)
 
-            if phi < delta:
-                if eta < delta:
-                    phase = "accelerating"
-                else:
-                    phase = "cruise"
+            if eta < delta:
+                phase = "accelerating"
             else:
-                if eta < delta:
-                    phase = "cruise"
-                else:
-                    phase = "decelerating"
+                phase = "decelerating"
 
             if phase == "accelerating":
                 self.des_ang_vel_c = (
                     self.max_ang_acc
                     * pulse_time
-                    * cross(self.ort_stt, (self.ort_tgt-self.ort_stt)).unit()
+                    * cross(self.ort_stt, (self.ort_tgt - self.ort_stt)).unit()
                 )
             # braking phase
             elif phase == "decelerating":
-                self.des_ang_vel_c = (
-                    self.max_ang_acc
-                    * pulse_time
-                    * cross(self.ort_stt, (self.ort_stt-self.ort_tgt)).unit()
-                )
+                if self.scene.angvel.norm() <= acc * pulse_time:
+                    print("delta:{}".format(delta))
+                    self.scene.angvel.print()
+                    self.des_ang_vel_c = self.scene.angvel * -1
+                else:
+                    self.des_ang_vel_c = (
+                        self.max_ang_acc
+                        * pulse_time
+                        * cross(self.ort_stt, (self.ort_stt - self.ort_tgt)).unit()
+                    )
             else:
                 self.des_ang_vel_c = Vector(0, 0, 0)
-
-            if self.i % 10 == 0:
-                print(phase)
-                print("phi  {:.1f}".format(phi * 180 / pi))
-                print("delta{:.1f}".format(delta * 180 / pi))
-                print("eta  {:.1f}".format(eta * 180 / pi))
-                print()
-            self.i += 1
+        else:
+            pass
 
 
 class World:
@@ -297,6 +297,12 @@ if __name__ == "__main__":
     testscene.print()
 
     testorder.rotate(Vector(1, 0, 0), pi / 2)
+
+    for i in range(0, 5):
+        world.runturn(5)
+        testscene.print()
+
+    testorder.burn(100)
 
     for i in range(0, 5):
         world.runturn(5)
