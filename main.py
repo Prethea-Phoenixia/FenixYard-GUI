@@ -79,7 +79,7 @@ class State(object):
         self.vel += deltav.norm() * self.ort
         self.angvel += deltaw
 
-        myOrder.report(deltav, deltaw, dT)
+        myOrder.update_order(deltav, deltaw, dT)
 
     def print(self):
         self.ship.print()
@@ -121,6 +121,7 @@ class Orders:
         self.ort_tgt = scene.ort
         self.ort_stt = scene.ort
         self.max_ang_acc = 1  # 1 rad/s^2
+        self.achievable_tr = 0
         scene.order = self
 
     # defunct.
@@ -150,11 +151,16 @@ class Orders:
     def getorder(self):
         return self.des_vel_c, self.des_ang_vel_c
 
-    def report(self, accomplished_vel_c, accomplished_ang_vel_c, pulse_time):
+    def update_order(self, accomplished_vel_c, accomplished_ang_vel_c, pulse_time):
         self.des_vel_c -= accomplished_vel_c
         self.des_ang_vel_c -= accomplished_ang_vel_c
 
-        acc = min(self.max_ang_acc, accomplished_ang_vel_c.norm() / pulse_time)
+
+        # updates maximum turn rate.
+        if self.achievable_tr < accomplished_ang_vel_c.norm()/pulse_time:
+            self.achievable_tr = accomplished_ang_vel_c.norm()/pulse_time
+
+        acc = min(self.max_ang_acc, self.achievable_tr)
 
         # updates des_ang_vel_c according to orientation target.
         # delta:angle to target
@@ -188,9 +194,7 @@ class Orders:
                 )
             # braking phase
             elif phase == "decelerating":
-                if self.scene.angvel.norm() <= acc * pulse_time:
-                    print("delta:{}".format(delta))
-                    self.scene.angvel.print()
+                if self.scene.angvel.norm() <= (acc * pulse_time):
                     self.des_ang_vel_c = self.scene.angvel * -1
                 else:
                     self.des_ang_vel_c = (
@@ -298,12 +302,13 @@ if __name__ == "__main__":
 
     testorder.rotate(Vector(1, 0, 0), pi / 2)
 
-    for i in range(0, 5):
-        world.runturn(5)
+    for i in range(0, 25):
+        world.runturn(1)
         testscene.print()
+        input()
 
     testorder.burn(100)
 
-    for i in range(0, 5):
+    for i in range(0, 1):
         world.runturn(5)
         testscene.print()
