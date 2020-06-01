@@ -111,6 +111,10 @@ class element(object):
         self.mk = mk
         if self.b:
             self.border(self.mk)
+        self.kb = None
+
+    def bind(self, kb):
+        self.kb = kb
 
     # make border. marker dictionary for horizontal border, vertical border and vertex
     # batch editing is more efficient than using addr.
@@ -226,10 +230,8 @@ class options(element):
             self.choice = choice
         self.prompt = pt
         h, w = self.h, self.w
-        question_line = (
-            "{:_<{width}}{}".format(
-                self.prompt, str(self.choice), width=w - 3 - len(str(self.choice)),
-            )
+        question_line = "{:_<{width}}{}".format(
+            self.prompt, str(self.choice), width=w - 3 - len(str(self.choice)),
         )
         self.graph(question_line)
 
@@ -257,10 +259,8 @@ class val(element):
             self.val = val
         self.prompt = pt
         h, w = self.h, self.w
-        value_line = (
-            "{:_<{width}}{}".format(
-                self.prompt, self.val, width=w - 3 - len(str(self.val))
-            )
+        value_line = "{:_<{width}}{}".format(
+            self.prompt, self.val, width=w - 3 - len(str(self.val))
         )
         self.graph(value_line)
 
@@ -287,16 +287,28 @@ def mainloop(window, loopfunction):
         loopfunction()
         window.render()
         ind = getch()
+        kbs = []
+        for element in window.elements:
+            kbs.append(element.kb)
         try:
             ind = int(ind)
             window.elements[ind].interact()
         except ValueError:
-            print("{} not understood.Integer please".format(ind))
+            try:
+                ind = str(ind.decode("utf8"))
+                print(ind)
+                window.elements[kbs.index(ind)].interact()
+            except AttributeError:
+                print("element {} not interactable".format(ind))
+            except ValueError:
+                print("element with keybind \"{}\" not found in {}".format(ind, kbs))
+
         except AttributeError:
             print("element {} not interactable".format(ind))
         except IndexError:
             print("index {} out of range:0-{}".format(ind, len(window.elements) - 1))
-        sleep(0.1)
+
+        sleep(0.25)
 
 
 if __name__ == "__main__":
@@ -305,9 +317,9 @@ if __name__ == "__main__":
     from utils import asciiplt
     from vector import Vector
 
-    a = window(width=100, height=20)
+    a = window(width=120, height=40)
     e = a.addelement("lu", w=0.5, t="graph")
-    f = a.addelement("ru", h=3, w=50, t="options", type="option")
+    f = a.addelement("ru", h=3, w=0.5, t="options", type="option")
     g = a.addelement("ru", h=17, w=30, t="help")
 
     h = a.addelement("ru", h=3, w=20, t="set x", type="value", b=True, mk="empty")
@@ -317,8 +329,11 @@ if __name__ == "__main__":
     f.binary("should graph", True)
     x, y, z = 0, 0, 0
     h.value("x", x, 0)
+    h.bind("x")
     i.value("y", y, 0)
+    i.bind("y")
     j.value("z", z, 0)
+    j.bind("z")
 
     def loopfunction():
         x, y, z = h.getval(), i.getval(), j.getval()
