@@ -1,6 +1,7 @@
 from math import pi, sqrt
 from numerical import brents
 
+
 class Mod(object):
     def __init__(self):
         self.mass = None
@@ -23,14 +24,6 @@ class Tank(Mod):
 
         self.fillratio = None
 
-    def print(self):
-        print("{} tank made of {}".format(self.content.name, self.str.name))
-        print(
-            "{:.2f} kg empty, currently {:.2f} kg".format(
-                self.mass, self.pmass + self.mass
-            )
-        )
-        print("diam of {:.2f} m, height of {:.2f} m".format(self.r * 2, self.h))
 
     def filltank(self, propellant, pmass, material):
         self.content = propellant
@@ -94,14 +87,9 @@ class Engine(Mod):
         engine.volume = 4 / 3 * pi * r ** 3 * 3  # arbitary scaling factor of 3
         engine.r = r
         engine.h = engine.volume / (pi * r ** 2)
-        self.mdot = self.thrust/self.ve
+        self.mdot = self.thrust / self.ve
 
-    def print(self):
-        print(
-            "{:.2f}kg thruster using {} producing {:.1f} kgf thrust".format(
-                self.mass, self.propellant.name, self.thrust / 9.8
-            )
-        )
+
 
 class Rcs(Engine):
     def __init__(self):

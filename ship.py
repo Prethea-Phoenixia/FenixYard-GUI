@@ -56,11 +56,11 @@ class Ship(object):
     # intended for adding reaction control thrusters (RCS).
     def addradialengines(self, engine, num):
         radials = [copy(engine) for i in range(0, num)]
-
         self.module.append(radials)
         for eng in radials:
             spher = Vector(1, pi / 2, 2 * pi * radials.index(eng) / len(radials))
             self.engines.append([eng, spher.spher_to_cart()])
+            x, y, z = spher.spher_to_cart().getval()
 
     # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
     # into [a,b,c,d]
@@ -232,94 +232,7 @@ class Ship(object):
     def print(self):
         # debugging diagram.
         print("ship diagram:")
-        max_clustering = 0
-        for po in self.module:
-            if isinstance(po, list):
-                max_clustering = max(max_clustering, len(po))
-
-        def get_padding(curr_clustering, length=16):
-            return (max_clustering / 2 * 16) - (length / 2 * curr_clustering)
-
-        def pad(clustering, length=16):
-            i = 0
-            space = ""
-            while i < get_padding(clustering, length):
-                space += " "
-                i += 1
-            return space
-
-        # unconditionally draw ASCII art
-        # if attrs is not present in attribute of object
-        # assuming the attribute is passed as string
-        def uncond(pos, asciiart, attrs):
-            full_graph = ""
-            i = 0
-            for line in asciiart:
-                this_line = ""
-                for mod in pos:
-                    if attrs[i] is not None:
-                        try:
-                            this_line += str(line.format(rgetattr(mod, attrs[i])))
-                        except:
-                            this_line += str(line.format(attrs[i]))
-                    else:
-                        this_line += line
-                this_line = pad(len(pos), len(this_line) / len(pos)) + this_line + "\n"
-                full_graph += this_line
-                i += 1
-            print(full_graph)
-
-        # conditionally draw ASCII art illustrating stuff. useful for multiple
-        # representation of same type of module.
-        def cond(pos, asciiart1, asciiart2, attrs1, attrs2, reason):
-            if reason():
-                asciiart = asciiart1
-                attrs = attrs1
-            else:
-                asciiart = asciiart2
-                attrs = attrs2
-
-            uncond(pos, asciiart, attrs)
-
-        # convert everything into nested list
-        display_queue = []
-        for pos in self.module:
-            if isinstance(pos, list):
-                display_queue.append(pos)
-            else:
-                display_queue.append([pos])
-
-        for pos in display_queue:
-            if all(isinstance(x, Tank) for x in pos):
-
-                asciiarts = [
-                    "/¯¯¯¯¯¯¯¯¯¯¯¯¯¯\\",
-                    str("|  {:^10}  |"),
-                    str("|  {:^10.1%}  |"),
-                    str("|  {:^7.1e} kg  |"),
-                    "\\______________/",
-                ]
-
-                attrs = [None, "content.name", "fillratio", "pmass", None]
-                uncond(pos, asciiarts, attrs)
-
-            elif all(isinstance(x, Engine) for x in pos):
-
-                def see_if_rcs():
-                    if all(self.get_engine_orient(x) == Vector(0, 0, 1) for x in pos):
-                        return True
-                    else:
-                        return False
-
-                asciiart1 = ["\\__{:^10}__/", "   /        \\   ", "  / {:^8} \\  "]
-                asciiart2 = ["  {:_^4}  ", " >{:^4}< ", "  {:¯^4}  "]
-
-                attrs1 = ["Engine", None, "propellant.name"]
-                attrs2 = ["\\/", "RCS", "/\\"]
-
-                cond(pos, asciiart1, asciiart2, attrs1, attrs2, see_if_rcs)
-
-        print("mass:{:.2f} kg".format(self.mass))
+        print(self.diagram())
 
     def diagram(self):
         def makegraph(*args):

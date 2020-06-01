@@ -1,4 +1,4 @@
-from math import pi, sqrt, inf
+from math import pi
 from vector import Vector, cross
 
 
@@ -7,8 +7,9 @@ from modules import Tank, Engine, Rcs
 from iohandler import readtxt, return_instance_from_list
 from ship import Ship
 from matrix import Matrix, nnls, vec_to_pbl_matrix
-from utils import euler_rot, solve_quadra
+from utils import euler_rot
 from vector import theta
+
 
 # layer for accounting for current ship state.
 class State(object):
@@ -82,7 +83,6 @@ class State(object):
         myOrder.update_order(deltav, deltaw, dT)
 
     def print(self):
-        self.ship.print()
         print(
             "position    {:^6.1f} {:^6.1f} {:^6.1f}".format(
                 self.pos.x, self.pos.y, self.pos.z
@@ -104,12 +104,6 @@ class State(object):
             )
         )
         print()
-
-
-# order interpretation layer.
-# example:
-# ship_a_order = Orders(),
-# ship_a_order.maintain_hdg()
 
 
 class Orders:
@@ -155,10 +149,9 @@ class Orders:
         self.des_vel_c -= accomplished_vel_c
         self.des_ang_vel_c -= accomplished_ang_vel_c
 
-
         # updates maximum turn rate.
-        if self.achievable_tr < accomplished_ang_vel_c.norm()/pulse_time:
-            self.achievable_tr = accomplished_ang_vel_c.norm()/pulse_time
+        if self.achievable_tr < accomplished_ang_vel_c.norm() / pulse_time:
+            self.achievable_tr = accomplished_ang_vel_c.norm() / pulse_time
 
         acc = min(self.max_ang_acc, self.achievable_tr)
 
@@ -255,15 +248,12 @@ if __name__ == "__main__":
 
     engine = Engine()
     engine.scale_engine(lh2lox, 500000)
-    engine.print()
 
     ntr = Engine()
     ntr.scale_engine(sntrw, 20000)
-    ntr.print()
 
     rcs = Rcs()
     rcs.scale_engine(lh2lox, 500)
-    rcs.print()
 
     testship = Ship()
     testship.str_acc_lim = 30
@@ -286,29 +276,23 @@ if __name__ == "__main__":
 
     world = World()
     world.states.append(testscene)
-    """
 
-    testorder.burn(500)
-
-    world.runturn(50)
-
-    testscene.print()
-
-    testorder.translate(Vector(1, 0, 0), 500)
-
-    world.runturn(50)
-    """
     testscene.print()
 
     testorder.rotate(Vector(1, 0, 0), pi / 2)
 
-    for i in range(0, 25):
-        world.runturn(1)
+    for i in range(0, 10):
+        world.runturn(5)
         testscene.print()
-        input()
 
     testorder.burn(100)
 
-    for i in range(0, 1):
+    for i in range(0, 10):
+        world.runturn(15)
+        testscene.print()
+
+    testorder.rotate(Vector(1, 1, 0), pi / 4)
+
+    for i in range(0, 10):
         world.runturn(5)
         testscene.print()
