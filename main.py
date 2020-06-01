@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, sqrt
 from vector import Vector, cross
 
 
@@ -124,12 +124,10 @@ class Orders:
         self.des_ang_vel_c = -1 * self.scene.angvel
 
     def maintain_vel(self):
-        self.cancel_angvel()
         self.des_vel_c = Vector(0, 0, 0)
 
     def burn(self, dv):
         # order ship to burn along current heading.
-        self.cancel_angvel()
         self.des_vel_c = Vector(0, 0, dv)
 
     def translate(self, direction, dv):
@@ -140,7 +138,8 @@ class Orders:
         self.maintain_vel()
         # targeted orientation.
         self.ort_stt = self.scene.ort
-        self.ort_tgt = euler_rot(self.scene.ort, direction.unit() * rad).unit()
+        self.ort_tgt = euler_rot(self.scene.ort, (direction.unit()) * rad).unit()
+        self.ort_tgt.print()
 
     def getorder(self):
         return self.des_vel_c, self.des_ang_vel_c
@@ -260,8 +259,8 @@ if __name__ == "__main__":
 
     testship.addradialengines(rcs, 4)
     testship.addmod(watertank)
-    testship.addcluster([oxytank, hydtank])
-    testship.addcluster([oxytank, hydtank])
+    testship.addcluster(oxytank, 2)
+    testship.addcluster(hydtank, 2)
     testship.addradialengines(rcs, 4)
     testship.addengine(engine, Vector(0, 0, 1))
 
@@ -279,19 +278,19 @@ if __name__ == "__main__":
 
     testscene.print()
 
-    testorder.rotate(Vector(1, 0, 0), pi / 2)
+    testorder.burn(100)
 
     for i in range(0, 10):
         world.runturn(5)
         testscene.print()
 
-    testorder.burn(100)
+    testorder.rotate(Vector(0.8, 0, 0), pi)
 
-    for i in range(0, 10):
-        world.runturn(15)
+    for i in range(0, 20):
+        world.runturn(5)
         testscene.print()
 
-    testorder.rotate(Vector(1, 1, 0), pi / 4)
+    testorder.burn(100)
 
     for i in range(0, 10):
         world.runturn(5)

@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, tan, sin, cos
 
 from modules import Tank, Engine, Rcs
 
@@ -41,10 +41,11 @@ class Ship(object):
         module = copy(module)
         self.module.append(module)
 
-    def addcluster(self, cluster_list):
+    # cluster of self-similiar module.
+    def addcluster(self, module, num):
         new_clus = []
-        for tank in cluster_list:
-            new_clus.append(copy(tank))
+        for i in range(num):
+            new_clus.append(copy(module))
         self.module.append(new_clus)
 
     # separates adding of engine system.
@@ -124,16 +125,57 @@ class Ship(object):
         h_com = sum(x * y for x, y in zip(hcum, masses)) / sum(masses)
 
         for mod in self.module:
-            self.mod_pos.append(h_com - hcum[self.module.index(mod)])
+            pos = h_com - hcum[self.module.index(mod)]
+            self.mod_pos.append(pos)
+            if isinstance(mod, list):
+                i = 0
+                for m in mod:
+                    rad_sep = m.r / tan(pi / len(mod))
+                    ang = i / len(mod) * 2 * pi
+                    self.pos = pos * Vector(0, 0, 1) + Vector(
+                        sin(ang) * rad_sep, cos(ang) * rad_sep, 0
+                    )
+                    i += 1
+            else:
+                self.pos = pos
 
         for mod in self.get_flat("module"):
             if isinstance(mod, Tank):
                 mod.percentage()
 
+        sigma_moi_z = 0
+        sigma_moi_xy = 0
+
+        for pos in self.module:
+            theta_m = 0
+            if isinstance(pos, list):
+                sum_d_sq_xy = 0
+                for i in range(0, len(pos)):
+                    ang = i * 2 * pi / len(pos)
+                    sum_d_sq_xy += abs(cos(ang)) ** 2
+
+                m = pos[0].mass
+                r = pos[0].r
+                h = pos[0].h
+                d = r / tan(pi / len(pos))
+                moi_xy = sum_d_sq_xy * m + (1 / 12 * m * (3 * r ** 2 + h ** 2)) * len(
+                    pos
+                )
+                moi_z = (1 / 2 * m * r ** 2 + m * d ** 2) * len(pos)
+                theta_m = sum(x.mass for x in pos)
+            else:
+                m = pos.mass
+                r = pos.r
+                h = pos.h
+
+                moi_xy = 1 / 12 * m * (3 * r ** 2 + h ** 2)
+                moi_z = 1 / 2 * m * r ** 2
+
+            sigma_moi_xy += moi_xy + theta_m * heights[self.module.index(pos)] ** 2
+            sigma_moi_z += moi_z
+
         # calculates moment of inertia on the x-y plane.
-        self.moi = sum(m * r ** 2 for r, m in zip(self.mod_pos, masses)) + sum(
-            1 / 12 * m * l ** 2 for l, m in zip(heights, masses)
-        )
+        self.moi = sigma_moi_xy
 
     def buildup_tank(self):
         acc_lim = self.str_acc_lim

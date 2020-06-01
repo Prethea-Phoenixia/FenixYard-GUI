@@ -12,6 +12,9 @@ class Mod(object):
         self.r = None
         self.h = None
 
+        # position in ships.
+        self.pos = None
+
 
 class Tank(Mod):
     def __init__(self):

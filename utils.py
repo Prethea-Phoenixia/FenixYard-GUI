@@ -21,7 +21,7 @@ def orth_rot(vector, thetax, thetay, thetaz):
     ry.mat = [[cos(thetay), 0, sin(thetay)], [0, 1, 0], [-sin(thetay), 0, cos(thetay)]]
     rz.mat = [[cos(thetaz), -sin(thetaz), 0], [sin(thetaz), cos(thetaz), 0], [0, 0, 1]]
 
-    R = rx * ry * rz
+    R = rz * ry * rx
     result = R * vec
     return result
 
