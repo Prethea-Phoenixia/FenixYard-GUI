@@ -115,6 +115,8 @@ class element(object):
 
     def bind(self, kb):
         self.kb = kb
+        self.title = "({})".format(kb) + self.title
+        self.border(self.mk)
 
     # make border. marker dictionary for horizontal border, vertical border and vertex
     # batch editing is more efficient than using addr.
@@ -296,12 +298,11 @@ def mainloop(window, loopfunction):
         except ValueError:
             try:
                 ind = str(ind.decode("utf8"))
-                print(ind)
                 window.elements[kbs.index(ind)].interact()
             except AttributeError:
                 print("element {} not interactable".format(ind))
             except ValueError:
-                print("element with keybind \"{}\" not found in {}".format(ind, kbs))
+                print('element with keybind "{}" not found in {}'.format(ind, kbs))
 
         except AttributeError:
             print("element {} not interactable".format(ind))
@@ -316,10 +317,17 @@ if __name__ == "__main__":
 
     from utils import asciiplt
     from vector import Vector
+    from utils import get_terminal_size_win
 
-    a = window(width=120, height=40)
+    w, h = get_terminal_size_win()
+    if w is None and h is None:
+        w, h = (100, 50)
+    else:
+        h -= 1
+    a = window(width=w, height=h)
     e = a.addelement("lu", w=0.5, t="graph")
     f = a.addelement("ru", h=3, w=0.5, t="options", type="option")
+    f.bind(" ")
     g = a.addelement("ru", h=17, w=30, t="help")
 
     h = a.addelement("ru", h=3, w=20, t="set x", type="value", b=True, mk="empty")
