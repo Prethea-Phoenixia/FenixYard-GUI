@@ -63,11 +63,20 @@ class window(object):
                 horz_end = -1
                 horz_step = -1
 
-            for m in range(vert_start, vert_end, vert_step):
+            if align[0] == "u" or align[0] == "d":
+                for m in range(vert_start, vert_end, vert_step):
+                    for n in range(horz_start, horz_end, horz_step):
+                        if self.chkokpc(m, n, h, w) is False:
+                            self.setokpc(m, n, h, w)
+                            return m, n
+
+            else:
                 for n in range(horz_start, horz_end, horz_step):
-                    if self.chkokpc(m, n, h, w) is False:
-                        self.setokpc(m, n, h, w)
-                        return m, n
+                    for m in range(vert_start, vert_end, vert_step):
+                        if self.chkokpc(m, n, h, w) is False:
+                            self.setokpc(m, n, h, w)
+                            return m, n
+
 
         m, n = find_starting_point()
         args = (h, w, (m, n), b, "(" + str(len(self.elements)) + ")" + t, mk)
@@ -77,6 +86,8 @@ class window(object):
             new_element = options(*args)
         elif type == "value":
             new_element = val(*args)
+        elif type == "menu":
+            new_element = menu(*args)
         self.elements.append(new_element)
 
         return new_element
@@ -115,7 +126,7 @@ class element(object):
 
     def bind(self, kb):
         self.kb = kb
-        self.title = "({})".format(kb) + self.title
+        self.title = "({}/".format(kb) + self.title[1:]
         self.border(self.mk)
 
     # make border. marker dictionary for horizontal border, vertical border and vertex
@@ -246,6 +257,7 @@ class options(element):
 
     def setval(self, val):
         self.choice = val
+        self.binary(self.prompt, self.choice)
 
 
 class val(element):
@@ -281,6 +293,57 @@ class val(element):
 
     def setval(self, val):
         self.val = val
+        self.value(self.prompt, self.val)
+
+
+class menu(element):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.choices = []
+        self.prompt = None
+        self.selection = None
+
+    def menu(self, pt, choices, default=0):
+        if self.selection is None:
+            self.selection = default
+        else:
+            pass
+
+        self.prompt = pt
+        self.choices = choices
+
+        h, w = self.h, self.w
+
+        lines = ""
+        ml = max(len(str(choice)) for choice in self.choices)
+        for i in range(len(self.choices)):
+            choice = self.choices[i]
+            if i != self.selection:
+                line = "{:^{w1}}{:<{w2}}".format(" ", choice, w1=w - 2 - ml, w2=ml)
+            else:
+                line = "{:_<{w1}}{:<{w2}}".format(
+                    self.prompt, choice, w1=w - 2 - ml, w2=ml
+                )
+            lines += line + "\n"
+
+        self.graph(lines)
+
+    def interact(self):
+        if self.selection < len(self.choices) - 1:
+            self.selection += 1
+        else:
+            self.selection = 0
+        self.update()
+
+    def update(self):
+        self.menu(self.prompt, self.choices)
+
+    def getval(self):
+        return self.selection
+
+    def setval(self, val):
+        self.selection = val
+        self.update()
 
 
 def mainloop(window, loopfunction):
@@ -309,21 +372,23 @@ def mainloop(window, loopfunction):
         except IndexError:
             print("index {} out of range:0-{}".format(ind, len(window.elements) - 1))
 
-        sleep(0.25)
-
 
 if __name__ == "__main__":
     lorem = "Demo of the interactive command-line interface for the project. Use the number preceeding the title to address individual fields. Some fields might prompt you for some input. This simple demo let you control a 3d-cartesian graphing plot."
+
+    sandwich = ["bread", "butter", "beef", "bread"]
 
     from utils import asciiplt
     from vector import Vector
     from utils import get_terminal_size_win
 
-    w, h = get_terminal_size_win()
-    if w is None and h is None:
-        w, h = (100, 50)
+    size = get_terminal_size_win()
+    if size is None:
+        w, h = 100, 50
     else:
-        h -= 1
+        w, h = size
+        h -= 2
+
     a = window(width=w, height=h)
     e = a.addelement("lu", w=0.5, t="graph")
     f = a.addelement("ru", h=3, w=0.5, t="options", type="option")
@@ -333,6 +398,9 @@ if __name__ == "__main__":
     h = a.addelement("ru", h=3, w=20, t="set x", type="value", b=True, mk="empty")
     i = a.addelement("ru", h=3, w=20, t="set y", type="value", b=True, mk="empty")
     j = a.addelement("ru", h=3, w=20, t="set z", type="value", b=True, mk="empty")
+
+    k = a.addelement("ru", h=0.2, w=0.2, t="testing menu", type="menu", b=True)
+
     g.text(lorem)
     f.binary("should graph", True)
     x, y, z = 0, 0, 0
@@ -342,6 +410,8 @@ if __name__ == "__main__":
     i.bind("y")
     j.value("z", z, 0)
     j.bind("z")
+
+    k.menu("sandwich", sandwich)
 
     def loopfunction():
         x, y, z = h.getval(), i.getval(), j.getval()

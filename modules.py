@@ -92,8 +92,6 @@ class Engine(Mod):
         engine.h = engine.volume / (pi * r ** 2)
         self.mdot = self.thrust / self.ve
 
-
-
 class Rcs(Engine):
     def __init__(self):
         super().__init__()

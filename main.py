@@ -280,18 +280,11 @@ if __name__ == "__main__":
 
     testorder.burn(100)
 
-    for i in range(0, 10):
-        world.runturn(5)
-        testscene.print()
-
-    testorder.rotate(Vector(0.8, 0, 0), pi)
-
-    for i in range(0, 20):
-        world.runturn(5)
-        testscene.print()
-
-    testorder.burn(100)
+    from monitor import watch
+    watch(world)
 
     for i in range(0, 10):
         world.runturn(5)
         testscene.print()
+
+    
