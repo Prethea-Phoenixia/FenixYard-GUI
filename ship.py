@@ -41,6 +41,19 @@ class Ship(object):
         module = copy(module)
         self.module.append(module)
 
+    # permanently delete a module.
+    def remove_mod(self, index):
+        rmved_md = self.module[index]
+        self.module.pop(index)
+        if isinstance(rmved_md, Engine):
+            i = 0
+            for eng, ort in self.engines:
+                if eng == rmved_md:
+                    self.engines.pop(i)
+                i += 1
+
+        self.tally()
+
     # cluster of self-similiar module.
     def addcluster(self, module, num):
         new_clus = []
@@ -53,6 +66,7 @@ class Ship(object):
         engine_itself = copy(engine)
         self.module.append(engine_itself)
         self.engines.append([engine_itself, orientation])
+        engine_itself.ort = orientation
 
     # intended for adding reaction control thrusters (RCS).
     def addradialengines(self, engine, num):
@@ -61,7 +75,7 @@ class Ship(object):
         for eng in radials:
             spher = Vector(1, pi / 2, 2 * pi * radials.index(eng) / len(radials))
             self.engines.append([eng, spher.spher_to_cart()])
-            x, y, z = spher.spher_to_cart().getval()
+            eng.ort = spher.spher_to_cart()
 
     # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
     # into [a,b,c,d]
@@ -132,12 +146,12 @@ class Ship(object):
                 for m in mod:
                     rad_sep = m.r / tan(pi / len(mod))
                     ang = i / len(mod) * 2 * pi
-                    self.pos = pos * Vector(0, 0, 1) + Vector(
+                    m.pos = pos * Vector(0, 0, 1) + Vector(
                         sin(ang) * rad_sep, cos(ang) * rad_sep, 0
                     )
                     i += 1
             else:
-                self.pos = pos
+                mod.pos = Vector(0,0,pos)
 
         for mod in self.get_flat("module"):
             if isinstance(mod, Tank):
@@ -285,12 +299,12 @@ class Ship(object):
 
         # RCS graphics:
         """
-          v
-        >| |<
-          ^
+         v
+        > <
+         ^
         """
 
-        rcs = makegraph("  v  ", ">| |<", "  ^  ")
+        rcs = makegraph(">O<")
 
         # engine graphics
         """
@@ -311,8 +325,8 @@ class Ship(object):
 
         tank = makegraph("/¯¯¯\\", "|   |", "|   |", "\\___/")
         graph_dict = {Tank: tank, Rcs: rcs, Engine: eng}
-        len_dict = {Tank: 5, Rcs: 5, Engine: 7}
-        height_dict = {Tank: 4, Rcs: 3, Engine: 3}
+        len_dict = {Tank: 5, Rcs: 3, Engine: 7}
+        height_dict = {Tank: 4, Rcs: 1, Engine: 3}
 
         # find the largest length.
 

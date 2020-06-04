@@ -15,6 +15,9 @@ class Mod(object):
         # position in ships.
         self.pos = None
 
+        # name will be referred to.
+        self.name = None
+
 
 class Tank(Mod):
     def __init__(self):
@@ -27,13 +30,14 @@ class Tank(Mod):
 
         self.fillratio = None
 
-
     def filltank(self, propellant, pmass, material):
         self.content = propellant
         self.pmass = pmass
         self.volume = pmass / propellant.lqdensity
         # mass of tank left for structural calculation in futures.
         self.str = material
+        # name it!
+        self.name = "{:.1f}t {} tank".format(self.pmass / 1000, self.content.name)
 
     # bullet shaped tank.
     def resize(self, ldratio):
@@ -79,6 +83,8 @@ class Engine(Mod):
         self.grid = None
         self.mdot = None
 
+        self.ort = None
+
     def scale_engine(self, propellant, thrust):
         engine = self
         engine.thrust = thrust
@@ -91,6 +97,16 @@ class Engine(Mod):
         engine.r = r
         engine.h = engine.volume / (pi * r ** 2)
         self.mdot = self.thrust / self.ve
+
+        if self.thrust > 9800:
+            self.name = "{:.1f}tf {} thruster".format(
+                self.thrust / 9800, self.propellant.name
+            )
+        else:
+            self.name = "{:.1f}kgf {} RCS".format(
+                self.thrust / 9.8, self.propellant.name
+            )
+
 
 class Rcs(Engine):
     def __init__(self):

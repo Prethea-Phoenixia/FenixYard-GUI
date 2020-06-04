@@ -1,5 +1,8 @@
+from msvcrt import getch
 while True:
-    a = input()
-    if a == "":
-        print("noinput")
-    print(a)
+    kp = getch()
+    if kp == b'\xe0':
+        print('catched.')
+        kp = getch()
+        asc = kp.decode('ansi')
+        print(asc)

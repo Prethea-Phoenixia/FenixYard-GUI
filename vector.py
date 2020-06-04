@@ -1,5 +1,5 @@
 # vector library.
-from math import sqrt, sin, cos, acos, atan
+from math import sqrt, sin, cos, acos, atan2
 from math import pi
 
 
@@ -64,7 +64,7 @@ class Vector:
         # r: radius, theta:inclination phi:azimuth
         x, y, z = self.getval()
         r = sqrt(x ** 2 + y ** 2 + z ** 2)
-        phi = atan(y / x)
+        phi = atan2(y,x)
         theta = acos(z / r)
 
         return Vector(r, theta, phi)

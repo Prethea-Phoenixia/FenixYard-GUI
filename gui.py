@@ -1,7 +1,7 @@
 from os import system
 from time import sleep
 from msvcrt import getch
-from utils import combinelines
+from utils import combinelines, clamp
 
 
 # window class. meant to handle general calls.
@@ -77,7 +77,6 @@ class window(object):
                             self.setokpc(m, n, h, w)
                             return m, n
 
-
         m, n = find_starting_point()
         args = (h, w, (m, n), b, "(" + str(len(self.elements)) + ")" + t, mk)
         if type == "default":
@@ -122,11 +121,16 @@ class element(object):
         self.mk = mk
         if self.b:
             self.border(self.mk)
-        self.kb = None
+        self.kb = []
 
-    def bind(self, kb):
-        self.kb = kb
-        self.title = "({}/".format(kb) + self.title[1:]
+    def bind(self, *args):
+        for kb in args:
+            self.kb.append(kb)
+
+        kbs = ""
+        for kb in args:
+            kbs += str(kb) + ","
+        self.title = "({}/".format(kbs[:-1]) + self.title[1:]
         self.border(self.mk)
 
     # make border. marker dictionary for horizontal border, vertical border and vertex
@@ -237,6 +241,7 @@ class options(element):
         self.prompt = None
 
     def binary(self, pt, choice, default=False):
+        self.clear()
         if self.choice is None:
             self.choice = default
         else:
@@ -248,8 +253,12 @@ class options(element):
         )
         self.graph(question_line)
 
-    def interact(self):
+    # dummy variable kp for compatiability reasons
+    def interact(self, kp=None):
         self.choice = not self.choice
+        self.update()
+
+    def update(self):
         self.binary(self.prompt, self.choice)
 
     def getval(self):
@@ -257,7 +266,7 @@ class options(element):
 
     def setval(self, val):
         self.choice = val
-        self.binary(self.prompt, self.choice)
+        self.update()
 
 
 class val(element):
@@ -267,6 +276,7 @@ class val(element):
         self.val = None
 
     def value(self, pt, val, default=0):
+        self.clear()
         if self.val is None:
             self.val = default
         else:
@@ -278,7 +288,10 @@ class val(element):
         )
         self.graph(value_line)
 
-    def interact(self):
+    def update(self):
+        self.value(self.prompt, self.val)
+
+    def interact(self, kp=None):
         while True:
             ip = input("value desired>")
             try:
@@ -286,14 +299,14 @@ class val(element):
                 break
             except ValueError:
                 print("value not recognized. float desired.")
-        self.value(self.prompt, self.val)
+        self.update()
 
     def getval(self):
         return self.val
 
     def setval(self, val):
         self.val = val
-        self.value(self.prompt, self.val)
+        self.update
 
 
 class menu(element):
@@ -302,15 +315,31 @@ class menu(element):
         self.choices = []
         self.prompt = None
         self.selection = None
+        self.subchoice = []
+        self.subsel = None
+        self.scroll = None
 
-    def menu(self, pt, choices, default=0):
-        if self.selection is None:
-            self.selection = default
-        else:
-            pass
+    def menu(self, pt, choices, default=0, sub_choice=None, subdef=0):
+
 
         self.prompt = pt
         self.choices = choices
+
+        self.clear()
+        if self.selection is None:
+            self.selection = default
+        else:
+            if self.selection > len(self.choices) -1:
+                self.selection = 0
+                self.scroll = 0
+
+        if self.subsel is None:
+            self.subsel = subdef
+        else:
+            pass
+
+        if self.scroll is None:
+            self.scroll = 0
 
         h, w = self.h, self.w
 
@@ -319,23 +348,38 @@ class menu(element):
         for i in range(len(self.choices)):
             choice = self.choices[i]
             if i != self.selection:
-                line = "{:^{w1}}{:<{w2}}".format(" ", choice, w1=w - 2 - ml, w2=ml)
+                line = "{:^{w1}}{:<{w2}}".format(
+                    " ", choice, w1=max(w - 2 - ml, 1), w2=ml
+                )
             else:
                 line = "{:_<{w1}}{:<{w2}}".format(
-                    self.prompt, choice, w1=w - 2 - ml, w2=ml
+                    self.prompt, choice, w1=max(w - 2 - ml, 1), w2=ml
                 )
             lines += line + "\n"
+        self.graph(lines[self.scroll * (self.w - 1) :])
 
-        self.graph(lines)
 
-    def interact(self):
-        if self.selection < len(self.choices) - 1:
-            self.selection += 1
-        else:
-            self.selection = 0
+    def interact(self, kp=None):
+        if kp is None:
+            if self.selection < len(self.choices) - 1:
+                self.selection += 1
+            else:
+                self.selection = 0
+
+            start = max(self.selection - (self.h - 2) + 1, 0)
+
+            self.scroll = start
+
+        elif kp == self.kb[0]:
+            self.selection -= 1
+            if self.selection < 0:
+                self.selection = len(self.choices) - 1
+
+            self.scroll = min(self.selection, len(self.choices) - self.h + 2)
         self.update()
 
     def update(self):
+
         self.menu(self.prompt, self.choices)
 
     def getval(self):
@@ -352,19 +396,21 @@ def mainloop(window, loopfunction):
         loopfunction()
         window.render()
         ind = getch()
-        kbs = []
+        kbs = {}
         for element in window.elements:
-            kbs.append(element.kb)
+            for kp in element.kb:
+                kbs.update({kp: window.elements.index(element)})
+
         try:
             ind = int(ind)
             window.elements[ind].interact()
         except ValueError:
             try:
                 ind = str(ind.decode("utf8"))
-                window.elements[kbs.index(ind)].interact()
+                window.elements[kbs[ind]].interact(ind)
             except AttributeError:
                 print("element {} not interactable".format(ind))
-            except ValueError:
+            except KeyError:
                 print('element with keybind "{}" not found in {}'.format(ind, kbs))
 
         except AttributeError:
@@ -399,7 +445,8 @@ if __name__ == "__main__":
     i = a.addelement("ru", h=3, w=20, t="set y", type="value", b=True, mk="empty")
     j = a.addelement("ru", h=3, w=20, t="set z", type="value", b=True, mk="empty")
 
-    k = a.addelement("ru", h=0.2, w=0.2, t="testing menu", type="menu", b=True)
+    k = a.addelement("ru", h=0.1, w=0.2, t="testing menu", type="menu", b=True)
+    k.bind("t")
 
     g.text(lorem)
     f.binary("should graph", True)
