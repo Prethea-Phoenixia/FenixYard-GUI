@@ -1,8 +1,10 @@
 # debugging console for monitoring ship conditions.
 # perhaps could be adapted for other use at later date.
 from gui import window, mainloop
-from utils import get_terminal_size_win
+from utils import get_terminal_size_win, SI
 from math import pi
+from materials import Material, Mixture
+from vector import Vector
 
 
 def watch(world):
@@ -19,8 +21,9 @@ def watch(world):
 
     sd = monitor.addelement("lu", w=0.15, h=0.75, t="ship")
     ss = monitor.addelement("lu", w=0.15, h=0.25, type="menu", t="ships")
-    ml = monitor.addelement("lu", w=0.25, h=0.2, type="menu", t="modules")
-    clss = monitor.addelement("lu", w=0.25, h=0.2, type="menu", t="cluster")
+    ml = monitor.addelement("lu", w=0.25, h=0.20, type="menu", t="modules")
+    clss = monitor.addelement("lu", w=0.25, h=0.20, type="menu", t="cluster")
+    info = monitor.addelement("lu", w=0.25, h=0.60, t="info")
     ss.menu("ship:", ship_name)
 
     def loop_function():
@@ -35,7 +38,7 @@ def watch(world):
                 posname = pos.name
             mod_names.append(posname)
 
-        ml.menu("mod", mod_names)
+        ml.menu("pos:", mod_names)
 
         pos = ship.module[ml.getval()]
         if isinstance(pos, list):
@@ -56,8 +59,35 @@ def watch(world):
                 )
             else:
                 x, y, z = m.pos.getval()
-                cluster_name.append("x {:> 3.1f} y {:> 3.1f} z {:> 3.1f}".format(x, y, z))
+                cluster_name.append(
+                    "x {:> 3.1f} y {:> 3.1f} z {:> 3.1f}".format(x, y, z)
+                )
 
-        clss.menu("module", cluster_name)
+        clss.menu("module:", cluster_name)
+
+        mod = cluster[clss.getval()]
+
+        graph = ""
+        for x, y in mod.__dict__.items():
+            try:
+                yfloat = float(y)
+                ysi, sifx = SI(yfloat)
+                ystr = "{:.3f}{}".format(ysi, sifx)
+            except ValueError:
+                ystr = str(y)
+            except TypeError:
+                ystr = str(y)
+            if isinstance(y, Material) or isinstance(y, Mixture):
+                ystr = str(y.name)
+            elif isinstance(y, Vector):
+                o, p, q = y.getval()
+                ystr = str("({:.1f} , {:.1f} , {:.1f})".format(o, p, q))
+
+            graph += str(
+                "{:^{w1}},{:^{w2}}\n".format(
+                    str(x), ystr, w1=int(0.25 * w / 3), w2=int(0.25 * w * 2 / 3)
+                )
+            )
+        info.graph(graph)
 
     mainloop(monitor, loop_function)

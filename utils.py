@@ -1,6 +1,6 @@
 from vector import Vector
 from matrix import Matrix
-from math import sin, cos, pi, sqrt
+from math import sin, cos, pi, sqrt, log10
 import struct
 
 
@@ -206,9 +206,11 @@ def solve_quadra(a, b, c):
     else:
         return None
 
+
 def get_terminal_size_win():
     try:
         from ctypes import windll, create_string_buffer
+
         # stdin handle is -10
         # stdout handle is -11
         # stderr handle is -12
@@ -216,14 +218,52 @@ def get_terminal_size_win():
         csbi = create_string_buffer(22)
         res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
         if res:
-            (bufx, bufy, curx, cury, wattr,
-             left, top, right, bottom,
-             maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
+            (
+                bufx,
+                bufy,
+                curx,
+                cury,
+                wattr,
+                left,
+                top,
+                right,
+                bottom,
+                maxx,
+                maxy,
+            ) = struct.unpack("hhhhHhhhhhh", csbi.raw)
             sizex = right - left + 1
             sizey = bottom - top + 1
             return sizex, sizey
     except Exception:
         pass
+
+
+def SI(val):
+    si_prefix = {
+        -3: "m",
+        -6: "μ",
+        -9: "n",
+        -12: "p",
+        -15: "f",
+        -18: "a",
+        -21: "z",
+        -24: "y",
+        0: " ",
+        3: "K",
+        6: "M",
+        9: "G",
+        12: "T",
+        15: "P",
+        18: "E",
+        21: "Z",
+        24: "Y",
+    }
+    for exponent, prefix in si_prefix.items():
+        value = val / 10 ** exponent
+        if 1e-3 < abs(value) < 1e3:
+            break
+
+    return value, prefix
 
 
 if __name__ == "__main__":
@@ -238,3 +278,4 @@ if __name__ == "__main__":
     print(asciiplt(vector))
     """
     print(get_terminal_size_win())
+    print(SI(250))

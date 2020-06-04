@@ -315,13 +315,9 @@ class menu(element):
         self.choices = []
         self.prompt = None
         self.selection = None
-        self.subchoice = []
-        self.subsel = None
         self.scroll = None
 
-    def menu(self, pt, choices, default=0, sub_choice=None, subdef=0):
-
-
+    def menu(self, pt, choices, default=0):
         self.prompt = pt
         self.choices = choices
 
@@ -329,14 +325,9 @@ class menu(element):
         if self.selection is None:
             self.selection = default
         else:
-            if self.selection > len(self.choices) -1:
+            if self.selection > len(self.choices) - 1:
                 self.selection = 0
                 self.scroll = 0
-
-        if self.subsel is None:
-            self.subsel = subdef
-        else:
-            pass
 
         if self.scroll is None:
             self.scroll = 0
@@ -358,9 +349,8 @@ class menu(element):
             lines += line + "\n"
         self.graph(lines[self.scroll * (self.w - 1) :])
 
-
     def interact(self, kp=None):
-        if kp is None:
+        def flip_up():
             if self.selection < len(self.choices) - 1:
                 self.selection += 1
             else:
@@ -369,13 +359,20 @@ class menu(element):
             start = max(self.selection - (self.h - 2) + 1, 0)
 
             self.scroll = start
-
-        elif kp == self.kb[0]:
+        def flip_down():
             self.selection -= 1
             if self.selection < 0:
                 self.selection = len(self.choices) - 1
 
             self.scroll = min(self.selection, len(self.choices) - self.h + 2)
+
+        if kp is None:
+            flip_up()
+        elif kp == self.kb[0]:
+            flip_up()
+        elif kp == self.kb[1]:
+            flip_down()
+           
         self.update()
 
     def update(self):
@@ -446,7 +443,7 @@ if __name__ == "__main__":
     j = a.addelement("ru", h=3, w=20, t="set z", type="value", b=True, mk="empty")
 
     k = a.addelement("ru", h=0.1, w=0.2, t="testing menu", type="menu", b=True)
-    k.bind("t")
+    k.bind("t","e")
 
     g.text(lorem)
     f.binary("should graph", True)
