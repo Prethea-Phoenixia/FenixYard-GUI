@@ -32,17 +32,18 @@ class window(object):
             for y in range(col, col + w):
                 self.occupancy[x][y] = 1
 
-    # behavior: if no height passed, h = height
-    #           if no width passed, w = full width
     def addelement(self, align, h=None, w=None, b=True, t="", type="default", mk="box"):
+        """behavior: if no height passed, h = height if no width passed, w = full width
+        mk accepts "empty" or "box" or a dictionary with keys "vtx","vb" and "hb", type accepts 
+        "option","button","menu",etc., as inputs"""
         if h is None:
             h = self.height
         elif h < 1:
-            h = int(self.height * h)
+            h = int(round(self.height * h, 0))
         if w is None:
             w = self.width
         elif w < 1:
-            w = int(self.width * w)
+            w = int(round(self.width * w, 0))
 
         # choose the appropriate place for placing the starting point (m,n)
         def find_starting_point():
@@ -87,6 +88,10 @@ class window(object):
             new_element = val(*args)
         elif type == "menu":
             new_element = menu(*args)
+        elif type == "button":
+            new_element = button(*args)
+        else:
+            raise NotImplementedError
         self.elements.append(new_element)
 
         return new_element
@@ -317,9 +322,21 @@ class menu(element):
         self.selection = None
         self.scroll = None
 
-    def menu(self, pt, choices, default=0):
+        self.mode = None
+        self.triggers = None
+        self.triggered = None
+        self.trigargs = None
+
+    def menu(self, pt, choices, default=0, triggers=None, trigargs=None, mode="sel"):
+        """sel:selection menu, default behavior
+        trig: trigger menu, selection is used to pick a trigger, separate action to confirm.
+        (requires one more keybinding. up, down, selection/deselection)
+        """
         self.prompt = pt
         self.choices = choices
+
+        self.mode = mode
+        self.triggers = triggers
 
         self.clear()
         if self.selection is None:
@@ -336,8 +353,21 @@ class menu(element):
 
         lines = ""
         ml = max(len(str(choice)) for choice in self.choices)
+
+        if self.mode == "trig":
+            ml += 1
+
         for i in range(len(self.choices)):
-            choice = self.choices[i]
+
+            """ handling triggered mode"""
+            if self.mode == "sel":
+                choice = self.choices[i]
+            elif self.mode == "trig":
+                if i == self.triggered:
+                    choice = "o" + self.choices[i]
+                else:
+                    choice = " " + self.choices[i]
+
             if i != self.selection:
                 line = "{:^{w1}}{:<{w2}}".format(
                     " ", choice, w1=max(w - 2 - ml, 1), w2=ml
@@ -359,6 +389,7 @@ class menu(element):
             start = max(self.selection - (self.h - 2) + 1, 0)
 
             self.scroll = start
+
         def flip_down():
             self.selection -= 1
             if self.selection < 0:
@@ -372,12 +403,32 @@ class menu(element):
             flip_up()
         elif kp == self.kb[1]:
             flip_down()
-           
+        elif kp == self.kb[2]:
+            if self.triggered is None or self.triggered != self.selection:
+                self.triggered = self.selection
+            else:
+                self.triggered = None
+
         self.update()
 
     def update(self):
 
-        self.menu(self.prompt, self.choices)
+        if self.triggered is not None:
+            print(self.triggers[self.triggered])
+            if self.trigargs is None:
+                getattr(globals, str(self.triggers[self.triggered]))
+            else:
+                getattr(globals, str(self.triggers[self.triggered]))(
+                    self.trigargs[self.triggered]
+                )
+
+        self.menu(
+            self.prompt,
+            self.choices,
+            triggers=self.triggers,
+            mode=self.mode,
+            trigargs=self.trigargs,
+        )
 
     def getval(self):
         return self.selection
@@ -385,6 +436,20 @@ class menu(element):
     def setval(self, val):
         self.selection = val
         self.update()
+
+
+class button(element):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.prompt = None
+        self.trigger = None
+
+    def button(self, prompt, trigger):
+        self.graph(prompt)
+        self.trigger = trigger
+
+    def interact(self):
+        self.trigger()
 
 
 def mainloop(window, loopfunction):
@@ -404,9 +469,10 @@ def mainloop(window, loopfunction):
         except ValueError:
             try:
                 ind = str(ind.decode("utf8"))
-                window.elements[kbs[ind]].interact(ind)
-            except AttributeError:
-                print("element {} not interactable".format(ind))
+                if hasattr(window.elements[kbs[ind]], "interact"):
+                    window.elements[kbs[ind]].interact(ind)
+                else:
+                    print("element {} is not interactable".format(ind))
             except KeyError:
                 print('element with keybind "{}" not found in {}'.format(ind, kbs))
 
@@ -443,7 +509,7 @@ if __name__ == "__main__":
     j = a.addelement("ru", h=3, w=20, t="set z", type="value", b=True, mk="empty")
 
     k = a.addelement("ru", h=0.1, w=0.2, t="testing menu", type="menu", b=True)
-    k.bind("t","e")
+    k.bind("t", "e")
 
     g.text(lorem)
     f.binary("should graph", True)

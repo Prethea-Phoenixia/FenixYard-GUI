@@ -19,12 +19,18 @@ def watch(world):
     ls_of_ships = [state.ship for state in world.states]
     ship_name = [i for i in range(len(ls_of_ships))]
 
+    def runturn(n):
+        world.runturn(n)
+
     sd = monitor.addelement("lu", w=0.15, h=0.75, t="ship")
-    ss = monitor.addelement("lu", w=0.15, h=0.25, type="menu", t="ships")
+    ss = monitor.addelement("lu", w=0.15, h=0.15, type="menu", t="ships")
     ml = monitor.addelement("lu", w=0.25, h=0.20, type="menu", t="modules")
     clss = monitor.addelement("lu", w=0.25, h=0.20, type="menu", t="cluster")
     info = monitor.addelement("lu", w=0.25, h=0.60, t="info")
+    run = monitor.addelement("lu", w=0.15, h=0.1, type="menu", t="runturn")
     ss.menu("ship:", ship_name)
+    run.menu("run:", ["1", "5"], triggers=[runturn, runturn],trigargs = [1,5], mode="trig")
+    run.bind("q", "a", "s")
 
     def loop_function():
         ship = ls_of_ships[ss.getval()]
