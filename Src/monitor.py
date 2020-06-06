@@ -29,7 +29,9 @@ def watch(world):
     info = monitor.addelement("lu", w=0.25, h=0.60, t="info")
     run = monitor.addelement("lu", w=0.15, h=0.1, type="menu", t="runturn")
     ss.menu("ship:", ship_name)
-    run.menu("run:", ["1", "5"], triggers=[runturn, runturn],trigargs = [1,5], mode="trig")
+    run.menu(
+        "run:", ["1", "5"], triggers=[runturn, runturn], trigargs=[1, 5], mode="togg"
+    )
     run.bind("q", "a", "s")
 
     def loop_function():

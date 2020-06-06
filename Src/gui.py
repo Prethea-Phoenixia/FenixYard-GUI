@@ -329,14 +329,16 @@ class menu(element):
 
     def menu(self, pt, choices, default=0, triggers=None, trigargs=None, mode="sel"):
         """sel:selection menu, default behavior
-        trig: trigger menu, selection is used to pick a trigger, separate action to confirm.
-        (requires one more keybinding. up, down, selection/deselection)
+        togg: toggle menu, selection is used to pick a trigger, separate action to confirm.
+        (requires one more keybinding. up, down, selection/deselection) keeps state.
+        trig: trigger menu, treats the menu as a series of buttons. (up,down,press)
         """
         self.prompt = pt
         self.choices = choices
 
         self.mode = mode
         self.triggers = triggers
+        self.trigargs = trigargs
 
         self.clear()
         if self.selection is None:
@@ -354,19 +356,21 @@ class menu(element):
         lines = ""
         ml = max(len(str(choice)) for choice in self.choices)
 
-        if self.mode == "trig":
+        if self.mode == "togg":
             ml += 1
 
         for i in range(len(self.choices)):
 
             """ handling triggered mode"""
-            if self.mode == "sel":
+            if self.mode == "sel" or self.mode == "trig":
                 choice = self.choices[i]
-            elif self.mode == "trig":
+            elif self.mode == "togg":
                 if i == self.triggered:
                     choice = "o" + self.choices[i]
                 else:
                     choice = " " + self.choices[i]
+            else:
+                raise NotImplementedError
 
             if i != self.selection:
                 line = "{:^{w1}}{:<{w2}}".format(
@@ -412,15 +416,19 @@ class menu(element):
         self.update()
 
     def update(self):
+        def op():
+            if self.triggered is not None:
+                print(self.triggers[self.triggered])
+                if self.trigargs is None:
+                    self.triggers[self.triggered]()
+                else:
+                    self.triggers[self.triggered](self.trigargs[self.triggered])
 
-        if self.triggered is not None:
-            print(self.triggers[self.triggered])
-            if self.trigargs is None:
-                getattr(globals, str(self.triggers[self.triggered]))
-            else:
-                getattr(globals, str(self.triggers[self.triggered]))(
-                    self.trigargs[self.triggered]
-                )
+        if self.mode == "togg":
+            op()
+        elif self.mode == "trig":
+            op()
+            self.triggered = None
 
         self.menu(
             self.prompt,
@@ -473,6 +481,12 @@ def mainloop(window, loopfunction):
                     window.elements[kbs[ind]].interact(ind)
                 else:
                     print("element {} is not interactable".format(ind))
+            except UnicodeDecodeError:
+                # catches the second return in case of a "/xe0" escape sequence.
+                getch()
+                print(
+                    "special characters, for example arrow keys and function keys, cannot be used."
+                )
             except KeyError:
                 print('element with keybind "{}" not found in {}'.format(ind, kbs))
 
