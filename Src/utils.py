@@ -266,6 +266,30 @@ def SI(val):
     return value, prefix
 
 
+def all_subclasses(cls):
+
+    if cls == type:
+        raise ValueError("Invalid class - 'type' is not a class")
+
+    subclasses = set()
+
+    stack = []
+    try:
+        stack.extend(cls.__subclasses__())
+    except (TypeError, AttributeError) as ex:
+        raise ValueError("Invalid class" + repr(cls)) from ex
+
+    while stack:
+        sub = stack.pop()
+        subclasses.add(sub)
+        try:
+            stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
+        except (TypeError, AttributeError):
+            continue
+
+    return list(subclasses)
+
+
 if __name__ == "__main__":
     """
     vector = Vector(-2, 3, -40)
@@ -279,3 +303,4 @@ if __name__ == "__main__":
     """
     print(get_terminal_size_win())
     print(SI(250))
+    print(all_subclasses(object))

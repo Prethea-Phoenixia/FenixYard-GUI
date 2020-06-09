@@ -27,10 +27,10 @@ class window(object):
         else:
             return True
 
-    def setokpc(self, row, col, h, w):
+    def setokpc(self, row, col, h, w, val=1):
         for x in range(row, row + h):
             for y in range(col, col + w):
-                self.occupancy[x][y] = 1
+                self.occupancy[x][y] = val
 
     def addelement(self, align, h=None, w=None, b=True, t="", type="default", mk="box"):
         """behavior: if no height passed, h = height if no width passed, w = full width
@@ -95,6 +95,11 @@ class window(object):
         self.elements.append(new_element)
 
         return new_element
+
+    def delete_element(self, *args):
+        for element in args:
+            self.setokpc(element.lu[0], element.lu[1], element.h, element.w, 0)
+            self.elements.pop(self.elements.index(element))
 
     def render(self):
         screen = self.content.splitlines()
@@ -280,7 +285,7 @@ class val(element):
         self.prompt = None
         self.val = None
 
-    def value(self, pt, val, default=0):
+    def value(self, pt, val, default=0, reversed=False):
         self.clear()
         if self.val is None:
             self.val = default
@@ -288,22 +293,46 @@ class val(element):
             self.val = val
         self.prompt = pt
         h, w = self.h, self.w
-        value_line = "{:_<{width}}{}".format(
-            self.prompt, self.val, width=w - 3 - len(str(self.val))
-        )
+        if reversed is False:
+            value_line = "{:_<{width}}{}".format(
+                self.prompt, self.val, width=max(w - 2 - len(str(self.val)), 0)
+            )
+        else:
+            value_line = "{:>{width}}{}".format(
+                self.val,
+                self.prompt,
+                width=max(w - 2 - len(str(self.prompt)), 0),
+            )
         self.graph(value_line)
 
     def update(self):
         self.value(self.prompt, self.val)
 
     def interact(self, kp=None):
-        while True:
-            ip = input("value desired>")
+        ip = input("value desired>")
+        val_type = None
+        try:
+            float(self.val)
+            val_type = "float"
+        except ValueError:
+            str(self.val)
+            val_type = "string"
+
+        try:
+            new_val = float(ip)
+            if val_type == "float":
+                self.val = new_val
+            else:
+                print("type mismatch, wants string")
+        except ValueError:
             try:
-                self.val = float(ip)
-                break
+                new_val = str(ip)
+                if val_type == "string":
+                    self.val = new_val
+                else:
+                    print("type mismatch: wants float")
             except ValueError:
-                print("value not recognized. float desired.")
+                print("value not recognized as flt/str.")
         self.update()
 
     def getval(self):
@@ -311,7 +340,7 @@ class val(element):
 
     def setval(self, val):
         self.val = val
-        self.update
+        self.update()
 
 
 class menu(element):
@@ -329,7 +358,7 @@ class menu(element):
 
     def menu(self, pt, choices, default=0, triggers=None, trigargs=None, mode="sel"):
         """sel:selection menu, default behavior
-        togg: toggle menu, selection is used to pick a trigger, separate action to confirm.
+        togg: toggle menu, indicates currently "on"/"selected" state, separate action to confirm.
         (requires one more keybinding. up, down, selection/deselection) keeps state.
         trig: trigger menu, treats the menu as a series of buttons. (up,down,press)
         """
@@ -354,7 +383,10 @@ class menu(element):
         h, w = self.h, self.w
 
         lines = ""
-        ml = max(len(str(choice)) for choice in self.choices)
+        if self.choices == []:
+            ml = 0
+        else:
+            ml = max(len(str(choice)) for choice in self.choices)
 
         if self.mode == "togg":
             ml += 1
@@ -417,8 +449,7 @@ class menu(element):
 
     def update(self):
         def op():
-            if self.triggered is not None:
-                print(self.triggers[self.triggered])
+            if self.triggered is not None and self.triggers is not None > 0:
                 if self.trigargs is None:
                     self.triggers[self.triggered]()
                 else:
@@ -445,6 +476,9 @@ class menu(element):
         self.selection = val
         self.update()
 
+    def getrigg(self):
+        return self.triggered
+
 
 class button(element):
     def __init__(self, *args):
@@ -456,7 +490,7 @@ class button(element):
         self.graph(prompt)
         self.trigger = trigger
 
-    def interact(self):
+    def interact(self, dummy=None):
         self.trigger()
 
 

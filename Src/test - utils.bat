@@ -1,2 +1,0 @@
-python utils.py
-pause

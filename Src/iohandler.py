@@ -1,3 +1,5 @@
+import os
+
 # return a list of the .name attribute of a list of instances, in order.
 def index_name(stuffs):
     stuff_index = []
@@ -74,3 +76,20 @@ def readtxt(filename, clas, parent_ls=[], additional_calls=None):
                 for call in additional_calls:
                     getattr(stuff, call)()
         return stuffs
+
+
+# return a dictionary of all files
+def all_file_with_extension(
+    file_extension, path=os.path.dirname(os.path.realpath(__file__))
+):
+    result = [each for each in os.listdir(path) if each.endswith(file_extension)]
+    return result
+
+if __name__ == "__main__":
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print(all_file_with_extension(".py", dir_path))
+    a = all_file_with_extension(".py", dir_path)
+    with open(a[0]) as f:
+        data = f.readlines()
+        for line in data:
+            print(line)

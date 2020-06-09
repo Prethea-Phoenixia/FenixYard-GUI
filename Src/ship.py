@@ -9,6 +9,8 @@ from functools import reduce
 
 from gui import combinelines
 
+from pickle import dump,load
+
 
 def rsetattr(obj, attr, val):
     pre, _, post = attr.rpartition(".")
@@ -35,6 +37,7 @@ class Ship(object):
         self.mod_pos = []
         self.moi = 0
         self.percentage = None
+        self.name = "NewShip"
 
     # use the module passed as a protoype and copy it.
     def addmod(self, module):
@@ -151,7 +154,7 @@ class Ship(object):
                     )
                     i += 1
             else:
-                mod.pos = Vector(0,0,pos)
+                mod.pos = Vector(0, 0, pos)
 
         for mod in self.get_flat("module"):
             if isinstance(mod, Tank):
@@ -393,3 +396,14 @@ class Ship(object):
             graph = combinelines(graph_lines)
 
         return graph
+
+    def load(filename):
+        savefile = open(filename,'rb')
+        myself = load(savefile)
+        savefile.close
+        return myself
+
+    def save(self, filename):
+        savefile = open(filename,'wb')
+        dump(self, savefile)
+        savefile.close()

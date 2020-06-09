@@ -1,5 +1,6 @@
 from math import pi, sqrt
 from numerical import brents
+from pickle import dump, load
 
 
 class Mod(object):
@@ -16,7 +17,18 @@ class Mod(object):
         self.pos = None
 
         # name will be referred to.
-        self.name = None
+        self.name = "NewModule"
+
+    def save(self, filename):
+        savefile = open(filename, "wb")
+        dump(self, savefile)
+        savefile.close()
+
+    def load(filename):
+        savefile = open(filename, "rb")
+        myself = load(savefile)
+        savefile.close
+        return myself
 
 
 class Tank(Mod):
@@ -71,6 +83,11 @@ class Tank(Mod):
         self.fillratio = self.pmass / (self.volume * self.content.lqdensity)
         return self.fillratio
 
+    def set(self, propellant, pmass, material, ldratio):
+        """material, float, material,float"""
+        self.filltank(propellant, pmass, material)
+        self.resize(ldratio)
+
 
 class Engine(Mod):
     def __init__(self):
@@ -106,6 +123,10 @@ class Engine(Mod):
             self.name = "{:.1f}kgf {} RCS".format(
                 self.thrust / 9.8, self.propellant.name
             )
+
+    def set(self, propellant, thrust):
+        """material,float"""
+        self.scale_engine(propellant, thrust)
 
 
 class Rcs(Engine):

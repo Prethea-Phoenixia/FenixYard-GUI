@@ -184,14 +184,6 @@ if __name__ == "__main__":
     world = World()
     world.states.append(testscene)
 
-    testscene.print()
-
-    testorder.burn(100)
-
     from monitor import watch
 
     watch(world)
-
-    for i in range(0, 10):
-        world.runturn(5)
-
