@@ -102,6 +102,7 @@ class window(object):
             self.elements.pop(self.elements.index(element))
 
     def render(self):
+        self.content = str(" " * self.width + "\n") * self.height
         screen = self.content.splitlines()
         deflen = len(screen[0])
         for e in self.elements:
@@ -284,6 +285,7 @@ class val(element):
         super().__init__(*args)
         self.prompt = None
         self.val = None
+        self.reversed = False
 
     def value(self, pt, val, default=0, reversed=False):
         self.clear()
@@ -293,20 +295,21 @@ class val(element):
             self.val = val
         self.prompt = pt
         h, w = self.h, self.w
+
+        self.reversed = reversed
+
         if reversed is False:
             value_line = "{:_<{width}}{}".format(
                 self.prompt, self.val, width=max(w - 2 - len(str(self.val)), 0)
             )
         else:
             value_line = "{:>{width}}{}".format(
-                self.val,
-                self.prompt,
-                width=max(w - 2 - len(str(self.prompt)), 0),
+                self.val, self.prompt, width=max(w - 2 - len(str(self.prompt)), 0),
             )
         self.graph(value_line)
 
     def update(self):
-        self.value(self.prompt, self.val)
+        self.value(self.prompt, self.val, reversed=self.reversed)
 
     def interact(self, kp=None):
         ip = input("value desired>")
@@ -479,6 +482,10 @@ class menu(element):
     def getrigg(self):
         return self.triggered
 
+    def setrigg(self, val):
+        self.triggered = val
+        self.update()
+
 
 class button(element):
     def __init__(self, *args):
@@ -496,6 +503,7 @@ class button(element):
 
 def mainloop(window, loopfunction):
     while True:
+        # OS specific, to be changed.
         system("cls")
         loopfunction()
         window.render()

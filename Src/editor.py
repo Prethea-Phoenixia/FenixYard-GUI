@@ -4,13 +4,15 @@ import os
 from materials import Material, Mixture
 from gui import window, mainloop
 from utils import get_terminal_size_win, all_subclasses
-from iohandler import all_file_with_extension
+from iohandler import all_file_with_extension, readtxt, index_name
 
 from modules import Mod, Engine, Rcs, Tank
 
 from ship import Ship
 
 from os import system
+
+absolutePath = str(os.path.dirname(os.path.realpath(__file__)))
 
 
 class container:
@@ -111,7 +113,23 @@ def showShipEditor():
 
 
 def showModEditor():
-    absolutePath = str(os.path.dirname(os.path.realpath(__file__)))
+    # import instances of material classes, defined by material_file_name
+    # and indexing the materials. ( with name only )
+
+    material_file_name = "Material.txt"
+    materials = readtxt(absolutePath + r"\\" + material_file_name, Material)
+
+    # import instances of propellant mixtures, defined by propellant_file_name
+
+    mixture_file_name = "Propulsion.txt"
+    mixtures = readtxt(
+        absolutePath + r"\\" + mixture_file_name,
+        Mixture,
+        materials,
+        Mixture.cleanup_calls,
+    )
+    mixtureNames = index_name(mixtures)
+
     editor = window("editor", 64, 20)
     system("title " + "Editor")
 
@@ -139,7 +157,6 @@ def showModEditor():
 
     currentMod = container()
     tempElem = container()
-    tempVal = container()
 
     def loop_func():
         files = os.listdir(absolutePath + r"\mods")
@@ -157,6 +174,36 @@ def showModEditor():
                 modname.setval(mod.name)
             elif modname.getval() != mod.name:  # assigns ship name from input
                 mod.name = modname.getval()
+
+        def handleEngine():
+            engine = Engine()
+            pT, pP, eM = tempElem.getcontent()
+            prop = mixtures[pP.getval()]
+            thrust = pT.getval()
+            if thrust > 0:
+                engine.set(prop, thrust)
+                eM.clear()
+                warnings = ""
+            else:
+                warnings = "!!Engine is not\nproducing thrust!!"
+            currentMod.setcontent(engine)
+
+            engine_diagram = (
+                "    /----\\"
+                + "\n"
+                + "    |    |"
+                + "\n"
+                + "    \\    /"
+                + "\n"
+                + "    /    \\"
+                + "\n"
+                + "   /      \\"
+                + "\n"
+                 + "  /        \\"
+                + "\n"
+                + warnings
+            )
+            eM.graph(engine_diagram)
 
         def loadMod():
             filedex = fileselect.getrigg()
@@ -180,6 +227,23 @@ def showModEditor():
             currentMod.setcontent(newMod)
             updateDisplayed()
 
+            tpe = tempElem.getcontent()
+
+            # delete all temporary element. just in case.
+            if tpe is not None:
+                editor.delete_element(*tpe)
+                tempElem.setcontent(None)
+
+            if isinstance(newMod, Engine):
+                pT = editor.addelement("lu", h=3, w=20, type="value")
+                pT.value("KN", pT.val, reversed=True)
+                pP = editor.addelement("lu", h=14, w=20, type="menu")
+                pP.menu(">", mixtureNames, mode="sel")
+                eM = editor.addelement("ru", h=17, w=20)
+
+                (*tpe,) = (pT, pP, eM)
+                tempElem.setcontent(tpe)
+
         def delMod():
             try:
                 selected_name = files[fileselect.getrigg()]
@@ -200,23 +264,9 @@ def showModEditor():
         new.button("NEW", newMod)
         delete.button("DEL", delMod)
 
-        tpe = tempElem.getcontent()
-        # delete all temporary element. just in case.
-        if tpe is not None:
-            editor.delete_element(*tpe)
-
         mod = currentMod.getcontent()
-        tval = tempVal.getcontent()
-
         if isinstance(mod, Engine):
-            propThrust = tval
-            pT = editor.addelement("lu", h=3, w=10, type="value")
-            pT.value("KN", propThrust,reversed = True)
-            (*tpe,) = pT,
-            (*tval,) = pT.getval(),
-
-        tempElem.setcontent(tpe)
-        tempVal.setcontent(tval)
+            handleEngine()
 
     mainloop(editor, loop_func)
 

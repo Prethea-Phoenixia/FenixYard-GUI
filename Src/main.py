@@ -10,6 +10,9 @@ from utils import euler_rot
 
 from orders import Orders
 
+import os
+
+absolutePath = str(os.path.dirname(os.path.realpath(__file__)))
 
 # layer for accounting for current ship state.
 class State(object):
@@ -124,12 +127,17 @@ if __name__ == "__main__":
     # and indexing the materials. ( with name only )
 
     material_file_name = "Material.txt"
-    materials = readtxt(material_file_name, Material)
+    materials = readtxt(absolutePath + r"\\" + material_file_name, Material)
 
     # import instances of propellant mixtures, defined by propellant_file_name
 
     mixture_file_name = "Propulsion.txt"
-    mixtures = readtxt(mixture_file_name, Mixture, materials, Mixture.cleanup_calls)
+    mixtures = readtxt(
+        absolutePath + r"\\" + mixture_file_name,
+        Mixture,
+        materials,
+        Mixture.cleanup_calls,
+    )
 
     hydrogen = return_instance_from_list("Hydrogen", materials)
     oxygen = return_instance_from_list("Oxygen", materials)
