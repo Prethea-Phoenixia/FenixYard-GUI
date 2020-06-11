@@ -186,16 +186,20 @@ def showModEditor():
             structure = materials[pS.getval()]
             ldr = pLDR.getval()
             mass = pM.getval()
+            warnings = ""
             if ldr > 0 and mass > 0:
-                tank.set(content, mass, structure, ldr)
+                tank.set(content, mass * 1000, structure, ldr)
                 modname.setval(tank.name)
                 currentMod.setcontent(tank)
+                warnings = ""
                 isValid = True
 
             if mass <= 0:
-                eM.text("!!length/diameter is not valid!!")
+                warnings += "!!length/diameter is not valid!!\n"
             if ldr <= 0:
-                eM.text("!!Tank is empty!!")
+                warnings += "!!Tank is empty!!\n"
+
+            eM.graph(warnings)
 
             return isValid
 
@@ -206,7 +210,7 @@ def showModEditor():
             prop = mixtures[pP.getval()]
             thrust = pT.getval()
             if thrust > 0:
-                engine.set(prop, thrust)
+                engine.set(prop, thrust * 1000)
                 modname.setval(engine.name)
                 eM.clear()
                 warnings = ""
@@ -215,10 +219,17 @@ def showModEditor():
             else:
                 warnings = "!!Engine is not producing thrust!!"
 
+            rad = engine.r
+
+            if rad is None:
+                rad = "!!invalid!!"
+            else:
+                rad = "r={:.1f}m".format(rad)
+
             engine_diagram = (
                 "      /----\\"
                 + "\n"
-                + "      |    |"
+                + "      |    |  {}".format(rad)
                 + "\n"
                 + "      \\    /"
                 + "\n"
@@ -229,8 +240,13 @@ def showModEditor():
                 + "    /        \\"
                 + "\n"
             )
-            dG.graph(engine_diagram)
 
+            if engine.propellant is not None:
+                for prop in engine.propellant.composition:
+                    m_r = engine.propellant.mass_ratio_norm(prop) * engine.mdot
+                    p_n = prop.name
+                    engine_diagram += "{}:{:.2f}kg/s".format(p_n, m_r) + "\n"
+            dG.graph(engine_diagram)
             eM.text(warnings)
 
             return isValid
@@ -239,7 +255,9 @@ def showModEditor():
             filedex = fileselect.getrigg()
             if filedex is not None:
                 filepath = absolutePath + r"\mods\\" + str(files[filedex])
-                currentMod.setcontent(Ship.load(filepath))
+                newMod = Ship.load(filepath)
+                currentMod.setcontent(newMod)
+                handleTemporary(newMod)
                 updateDisplayed()
             else:
                 "no file specified."
@@ -258,15 +276,24 @@ def showModEditor():
         def newMod():
             newMod = modclass[modtype.getval()]()
             currentMod.setcontent(newMod)
+            handleTemporary(newMod)
             updateDisplayed()
 
+        def delMod():
+            try:
+                selected_name = files[fileselect.getrigg()]
+                savepath = absolutePath + r"\mods\{}".format(selected_name)
+                os.remove(savepath)
+            except (IndexError, TypeError) as e:
+                print("invalid selection. please select ship to delete first.")
+
+        def handleTemporary(newMod):
             tpe = tempElem.getcontent()
 
             # delete all temporary element. just in case.
             if tpe is not None:
                 editor.delete_element(*tpe)
                 tempElem.setcontent(None)
-
             if isinstance(newMod, Engine):
                 pT = editor.addelement("lu", h=0.1, w=0.24, type="value")
                 pT.value("KN", pT.val, reversed=True)
@@ -294,14 +321,6 @@ def showModEditor():
                 (*tpe,) = (pC, pS, pM, pLDR, eM)
                 tempElem.setcontent(tpe)
 
-        def delMod():
-            try:
-                selected_name = files[fileselect.getrigg()]
-                savepath = absolutePath + r"\mods\{}".format(selected_name)
-                os.remove(savepath)
-            except (IndexError, TypeError) as e:
-                print("invalid selection. please select ship to delete first.")
-
         def updateDisplayed():
             """updates when underlying data structure changes due to data load,
             refreshes the Module name display and other stuff. 
@@ -315,10 +334,11 @@ def showModEditor():
 
         saving_valid = False
         mod = currentMod.getcontent()
-        if isinstance(mod, Engine):
-            saving_valid = handleEngine()
-        elif isinstance(mod, Tank):
-            saving_valid = handleTank()
+        if tempElem.getcontent() is not None:
+            if isinstance(mod, Engine):
+                saving_valid = handleEngine()
+            elif isinstance(mod, Tank):
+                saving_valid = handleTank()
 
         if saving_valid:
             save.button("SAVE", saveMod)

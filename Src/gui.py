@@ -242,6 +242,7 @@ class element(object):
 
     # graphing mode, respecting the line change characters of give string.
     def graph(self, graph):
+        self.clear()
         assert isinstance(graph, str)
         # text width, excluding the borders.
         tw = self.w - 2
