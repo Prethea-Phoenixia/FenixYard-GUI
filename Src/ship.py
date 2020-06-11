@@ -9,7 +9,7 @@ from functools import reduce
 
 from gui import combinelines
 
-from pickle import dump,load
+from pickle import dump, load
 
 
 def rsetattr(obj, attr, val):
@@ -35,7 +35,7 @@ class Ship(object):
         # structural acceleration limit
         self.str_acc_lim = 0
         self.mod_pos = []
-        self.moi = 0
+        self.moi = 0,0
         self.percentage = None
         self.name = "NewShip"
 
@@ -192,7 +192,7 @@ class Ship(object):
             sigma_moi_z += moi_z
 
         # calculates moment of inertia on the x-y plane.
-        self.moi = sigma_moi_xy
+        self.moi = sigma_moi_xy, sigma_moi_z
 
     def buildup_tank(self):
         acc_lim = self.str_acc_lim
@@ -398,12 +398,12 @@ class Ship(object):
         return graph
 
     def load(filename):
-        savefile = open(filename,'rb')
+        savefile = open(filename, "rb")
         myself = load(savefile)
         savefile.close
         return myself
 
     def save(self, filename):
-        savefile = open(filename,'wb')
+        savefile = open(filename, "wb")
         dump(self, savefile)
         savefile.close()

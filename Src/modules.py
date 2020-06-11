@@ -49,7 +49,9 @@ class Tank(Mod):
         # mass of tank left for structural calculation in futures.
         self.str = material
         # name it!
-        self.name = "{:.1f}t {} tank".format(self.pmass / 1000, self.content.name)
+        self.name = "{:.1f}t {} tank of {}".format(
+            self.pmass / 1000, self.str.name, self.content.name
+        )
 
     # bullet shaped tank.
     def resize(self, ldratio):

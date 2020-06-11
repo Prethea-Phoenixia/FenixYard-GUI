@@ -44,7 +44,9 @@ class State(object):
             tq = cross(r, f)
 
             a = f / myShip.mass
-            alpha = tq / self.ship.moi
+            tqx, tqy, tqz = tq.getval()
+            moixy, moiz = self.moi
+            alpha = Vector(tqx / moixy, tqy / moixy, tqz / moiz)
 
             acc.append(a)
             ang_acc.append(alpha)

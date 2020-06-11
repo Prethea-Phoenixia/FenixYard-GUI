@@ -46,7 +46,7 @@ class window(object):
             w = int(round(self.width * w, 0))
 
         # choose the appropriate place for placing the starting point (m,n)
-        def find_starting_point():
+        def find_starting_point(w, h):
             if "u" in align:
                 vert_start = 0
                 vert_end = self.height - h + 1
@@ -78,7 +78,34 @@ class window(object):
                             self.setokpc(m, n, h, w)
                             return m, n
 
-        m, n = find_starting_point()
+        """
+
+        def spiral_descend(w, h):
+            try:
+                m, n = find_starting_point(w, h)
+                return m, n
+            except TypeError:
+                try:
+                    w -= 1
+                    m, n = find_starting_point(w, h)
+                    return m, n
+                except TypeError:
+                    try:
+                        w += 1
+                        h -= 1
+                        m, n = find_starting_point(w, h)
+                        return m, n
+                    except TypeError:
+                        m, n = spiral_descend(w - 1, h - 1)
+
+        """
+
+        try:
+            # m, n = spiral_descend(w, h)
+            m, n = find_starting_point(w, h)
+        except TypeError:
+            raise Exception("unable to assign position")
+
         args = (h, w, (m, n), b, "(" + str(len(self.elements)) + ")" + t, mk)
         if type == "default":
             new_element = element(*args)
@@ -113,9 +140,7 @@ class window(object):
                 screen[i] = screen[i][:deflen]
                 i += 1
 
-        self.content = combinelines(screen)
-
-        print(self.content)
+        print(combinelines(screen))
 
 
 # element class for handling positions, and pre-defined buubbles,etc
