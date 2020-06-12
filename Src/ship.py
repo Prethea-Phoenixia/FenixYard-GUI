@@ -35,50 +35,32 @@ class Ship(object):
         # structural acceleration limit
         self.str_acc_lim = 0
         self.mod_pos = []
-        self.moi = 0,0
+        self.moi = 0, 0
         self.percentage = None
         self.name = "NewShip"
 
-    # use the module passed as a protoype and copy it.
-    def addmod(self, module):
-        module = copy(module)
-        self.module.append(module)
+    def add(self, stuff, num=1):
+        if num == 1:
+            stuff_copy = copy(stuff)
+            self.module.append(stuff_copy)
+            if isinstance(stuff, Engine):
+                # defaults to engine thrusting directly forward.
+                self.engines.append([stuff_copy, Vector(0, 0, 1)])
+                stuff_copy.ort = Vector(0,0,1)
 
-    # permanently delete a module.
-    def remove_mod(self, index):
-        rmved_md = self.module[index]
-        self.module.pop(index)
-        if isinstance(rmved_md, Engine):
-            i = 0
-            for eng, ort in self.engines:
-                if eng == rmved_md:
-                    self.engines.pop(i)
-                i += 1
+        elif num > 1:
+            # add clusters of stuff.
+            new_clus = [copy(stuff) for i in range(0, num)]
+            self.module.append(new_clus)
+            # handling of RCS clusters.
+            if isinstance(stuff, Engine):
+                for eng in new_clus:
+                    spher = Vector(
+                        1, pi / 2, 2 * pi * new_clus.index(eng) / len(new_clus)
+                    )
+                    self.engines.append([eng, spher.spher_to_cart()])
+                    eng.ort = spher.spher_to_cart()
 
-        self.tally()
-
-    # cluster of self-similiar module.
-    def addcluster(self, module, num):
-        new_clus = []
-        for i in range(num):
-            new_clus.append(copy(module))
-        self.module.append(new_clus)
-
-    # separates adding of engine system.
-    def addengine(self, engine, orientation):
-        engine_itself = copy(engine)
-        self.module.append(engine_itself)
-        self.engines.append([engine_itself, orientation])
-        engine_itself.ort = orientation
-
-    # intended for adding reaction control thrusters (RCS).
-    def addradialengines(self, engine, num):
-        radials = [copy(engine) for i in range(0, num)]
-        self.module.append(radials)
-        for eng in radials:
-            spher = Vector(1, pi / 2, 2 * pi * radials.index(eng) / len(radials))
-            self.engines.append([eng, spher.spher_to_cart()])
-            eng.ort = spher.spher_to_cart()
 
     # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
     # into [a,b,c,d]

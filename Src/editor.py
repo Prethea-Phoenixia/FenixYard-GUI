@@ -30,7 +30,6 @@ class container:
 
 def showShipEditor():
 
-    absolutePath = str(os.path.dirname(os.path.realpath(__file__)))
     editor = window("editor", w, h - 1)
     system("title " + "Editor")
     ship_name = "NewShip"
@@ -53,11 +52,20 @@ def showShipEditor():
     delete.bind("x")
 
     currentShip = container()
+    currentMod = container()
+
+    diagram = editor.addelement("lu", w=0.2, h=0.9, t="Diagram:")
+
+    modselect = editor.addelement("ru", w=0.4, h=0.4, t="Module:", type="menu")
+
+    addmodule = editor.addelement("ru", w=0.1, h=0.1, t="", type="button")
 
     def loop_func():
+        modfiles = os.listdir(absolutePath + r"\mods")
         # updates file in the \ships folder.
         files = all_file_with_extension(".ship", absolutePath + r"\ships")
         fileselect.menu("", files, mode="togg")
+        modselect.menu("", modfiles, mode="sel")
 
         ship = currentShip.getcontent()
         if ship is None:
@@ -103,8 +111,20 @@ def showShipEditor():
             refreshes the ship name display and other stuff. 
             """
             ship = currentShip.getcontent()
-            print(ship)
             shipname.setval(ship.name)
+            if hasattr(ship, "diagram") and ship.diagram() is not None:
+                diagram.graph(ship.diagram())
+
+        def insertModule():
+            # which one to get?
+            modi = modselect.getval()
+            # load our module.
+            mod = Mod()
+            currentMod.setcontent(
+                Mod.load(absolutePath + r"\mods\{}".format(modfiles[modi]))
+            )
+
+        addmodule.button("Load Module", insertModule)
 
         save.button("SAVE", saveShip)
         load.button("LOAD", loadShip)
@@ -115,6 +135,7 @@ def showShipEditor():
 
 
 def showModEditor():
+
     # import instances of material classes, defined by material_file_name
     # and indexing the materials. ( with name only )
 
@@ -137,22 +158,22 @@ def showModEditor():
     system("title " + "Editor")
 
     mod_name = "NewModule"
-    modname = editor.addelement("ul", h=0.1, w=0.24, t="Name:", type="value")
+    modname = editor.addelement("ul", h=0.1, w=0.35, t="Name:", type="value")
     modname.value("", mod_name, "NewModule")
 
-    modtype = editor.addelement("ul", h=0.1, w=0.24, t="mod:", type="menu")
+    modtype = editor.addelement("ul", h=0.1, w=0.15, t="mod:", type="menu")
     modtype.bind("q", "w")
 
-    delete = editor.addelement("ur", h=0.1, w=0.12, t="", type="button")
+    delete = editor.addelement("ur", h=0.1, w=0.05, t="", type="button")
     delete.bind("x")
 
-    new = editor.addelement("ur", h=0.1, w=0.12, t="", type="button")
+    new = editor.addelement("ur", h=0.1, w=0.05, t="", type="button")
     new.bind("n")
 
-    load = editor.addelement("ur", h=0.1, w=0.12, t="", type="button")
+    load = editor.addelement("ur", h=0.1, w=0.05, t="", type="button")
     load.bind("l")
 
-    save = editor.addelement("ur", h=0.1, w=0.12, t="", type="button")
+    save = editor.addelement("ur", h=0.1, w=0.05, t="", type="button")
     save.bind("s")
 
     fileselect = editor.addelement("ur", h=0.9, w=0.48, t="File:", type="menu")
@@ -181,13 +202,13 @@ def showModEditor():
         def handleTank():
             isValid = False
             tank = currentMod.getcontent()
-            (pC, pS, pM, pLDR, eM) = tempElem.getcontent()
+            (pC, pS, pM, pLDR, eM, tDG) = tempElem.getcontent()
             content = materials[pC.getval()]
             structure = materials[pS.getval()]
             ldr = pLDR.getval()
             mass = pM.getval()
             warnings = ""
-            if ldr > 0 and mass > 0:
+            if ldr > 0 and mass > 0 and structure.yieldstrength > 0:
                 tank.set(content, mass * 1000, structure, ldr)
                 modname.setval(tank.name)
                 currentMod.setcontent(tank)
@@ -195,9 +216,11 @@ def showModEditor():
                 isValid = True
 
             if mass <= 0:
-                warnings += "!!length/diameter is not valid!!\n"
-            if ldr <= 0:
                 warnings += "!!Tank is empty!!\n"
+            if ldr <= 0:
+                warnings += "!!length/diameter is not valid!!\n"
+            if structure.yieldstrength <= 0:
+                warnings += "!!structural material is invalid!!\n"
 
             eM.graph(warnings)
 
@@ -247,7 +270,7 @@ def showModEditor():
                     p_n = prop.name
                     engine_diagram += "{}:{:.2f}kg/s".format(p_n, m_r) + "\n"
             dG.graph(engine_diagram)
-            eM.text(warnings)
+            eM.graph(warnings)
 
             return isValid
 
@@ -317,8 +340,9 @@ def showModEditor():
                 pLDR.value("", pLDR.val)
                 pLDR.bind("r")
                 eM = editor.addelement("lu", h=0.2, w=0.24)
+                tDG = editor.addelement("lu", h=0.5, w=0.24)
 
-                (*tpe,) = (pC, pS, pM, pLDR, eM)
+                (*tpe,) = (pC, pS, pM, pLDR, eM, tDG)
                 tempElem.setcontent(tpe)
 
         def updateDisplayed():
@@ -347,7 +371,10 @@ def showModEditor():
 
     mainloop(editor, loop_func)
 
+    return True
+
 
 if __name__ == "__main__":
-    showModEditor()
-    showShipEditor()
+    while True:
+        showModEditor()
+        showShipEditor()

@@ -544,7 +544,9 @@ def mainloop(window, loopfunction):
             window.elements[ind].interact()
         except ValueError:
             try:
-                ind = str(ind.decode("utf8"))
+                if ind == chr(27).encode():
+                    return None
+                ind = ind.decode("utf8")
                 if hasattr(window.elements[kbs[ind]], "interact"):
                     window.elements[kbs[ind]].interact(ind)
                 else:
@@ -562,6 +564,8 @@ def mainloop(window, loopfunction):
             print("element {} not interactable".format(ind))
         except IndexError:
             print("index {} out of range:0-{}".format(ind, len(window.elements) - 1))
+
+    return None
 
 
 if __name__ == "__main__":
