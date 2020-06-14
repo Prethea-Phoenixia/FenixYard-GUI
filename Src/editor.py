@@ -1,4 +1,3 @@
-import pickle
 import os
 
 from materials import Material, Mixture
@@ -60,6 +59,10 @@ def showShipEditor():
 
     addmodule = editor.addelement("ru", w=0.1, h=0.1, t="", type="button")
 
+    shipmodlist = editor.addelement("lu", w=0.2, h=0.9, t="Module:", type="menu")
+
+    shipinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
+
     def loop_func():
         modfiles = os.listdir(absolutePath + r"\mods")
         # updates file in the \ships folder.
@@ -108,12 +111,13 @@ def showShipEditor():
 
         def updateDisplayed():
             """updates when underlying data structure changes due to data load,
-            refreshes the ship name display and other stuff. 
+            refreshes the ship name display and ship's diagram plot.
             """
             ship = currentShip.getcontent()
             shipname.setval(ship.name)
             if hasattr(ship, "diagram") and ship.diagram() is not None:
                 diagram.graph(ship.diagram())
+                shipmodlist.menu(">>", ship.modnames())
 
         def insertModule():
             # which one to get?
@@ -123,8 +127,17 @@ def showShipEditor():
             currentMod.setcontent(
                 Mod.load(absolutePath + r"\mods\{}".format(modfiles[modi]))
             )
+            # after loading our module, put it in our ship.
+            ship = currentShip.getcontent()
+            # validate our ship is actually a Ship object
+            if ship is not None:
+                ship.add(currentMod.getcontent())
+                currentShip.setcontent(ship)
+                updateDisplayed()
+            else:
+                print("Create a ship first!")
 
-        addmodule.button("Load Module", insertModule)
+        addmodule.button("Add Module", insertModule)
 
         save.button("SAVE", saveShip)
         load.button("LOAD", loadShip)
@@ -162,7 +175,6 @@ def showModEditor():
     modname.value("", mod_name, "NewModule")
 
     modtype = editor.addelement("ul", h=0.1, w=0.15, t="mod:", type="menu")
-    modtype.bind("q", "w")
 
     delete = editor.addelement("ur", h=0.1, w=0.05, t="", type="button")
     delete.bind("x")

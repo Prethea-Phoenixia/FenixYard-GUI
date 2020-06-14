@@ -238,34 +238,6 @@ def get_terminal_size_win():
         pass
 
 
-def SI(val):
-    si_prefix = {
-        -3: "m",
-        -6: "μ",
-        -9: "n",
-        -12: "p",
-        -15: "f",
-        -18: "a",
-        -21: "z",
-        -24: "y",
-        0: " ",
-        3: "K",
-        6: "M",
-        9: "G",
-        12: "T",
-        15: "P",
-        18: "E",
-        21: "Z",
-        24: "Y",
-    }
-    for exponent, prefix in si_prefix.items():
-        value = val / 10 ** exponent
-        if 1e-3 < abs(value) < 1e3:
-            break
-
-    return value, prefix
-
-
 def all_subclasses(cls):
 
     if cls == type:

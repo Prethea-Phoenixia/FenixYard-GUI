@@ -95,6 +95,12 @@ class Mixture(object):
         for str_ratio in self.ratio:
             flt_ratio_ls.append(float(str_ratio))
         self.ratio = flt_ratio_ls
+        while True:
+            # removes all 0 from ratio list.
+            if 0 in self.ratio:
+                self.ratio.remove(0)
+            else:
+                break
         sum_mass = 0
         sum_vol = 0
         for propellant in self.composition:

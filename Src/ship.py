@@ -389,3 +389,14 @@ class Ship(object):
         savefile = open(filename, "wb")
         dump(self, savefile)
         savefile.close()
+
+
+    def modnames(self):
+        modnames = []
+        for mod in self.module:
+            if isinstance(mod,list):
+                modnames.append("{}x{}".format(len(mod),mod[0].name))
+            else:
+                modnames.append(mod.name)
+
+        return modnames
