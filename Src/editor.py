@@ -11,6 +11,8 @@ from ship import Ship
 
 from os import system
 
+from math import nan
+
 absolutePath = str(os.path.dirname(os.path.realpath(__file__)))
 
 w, h = get_terminal_size_win()
@@ -110,14 +112,9 @@ def showShipEditor():
                 print("invalid selection. please select ship to delete first.")
 
         def updateDisplayed():
-            """updates when underlying data structure changes due to data load,
-            refreshes the ship name display and ship's diagram plot.
-            """
-            ship = currentShip.getcontent()
-            shipname.setval(ship.name)
-            if hasattr(ship, "diagram") and ship.diagram() is not None:
-                diagram.graph(ship.diagram())
-                shipmodlist.menu(">>", ship.modnames())
+            """new approach: instead of manually taking note of what must be updated, from now on
+            will simply force another render cycle."""
+            return True
 
         def insertModule():
             # which one to get?
@@ -138,6 +135,11 @@ def showShipEditor():
                 print("Create a ship first!")
 
         addmodule.button("Add Module", insertModule)
+
+        # ship informations displayed.
+        if hasattr(ship, "diagram") and ship.diagram() is not None:
+            diagram.graph(ship.diagram())
+            shipmodlist.menu(">>", ship.modnames())
 
         save.button("SAVE", saveShip)
         load.button("LOAD", loadShip)
@@ -214,8 +216,10 @@ def showModEditor():
         def handleTank():
             isValid = False
             tank = currentMod.getcontent()
+
             (pC, pS, pM, pLDR, eM, tDG) = tempElem.getcontent()
             content = materials[pC.getval()]
+
             structure = materials[pS.getval()]
             ldr = pLDR.getval()
             mass = pM.getval()
@@ -232,9 +236,26 @@ def showModEditor():
             if ldr <= 0:
                 warnings += "!!length/diameter is not valid!!\n"
             if structure.yieldstrength <= 0:
-                warnings += "!!structural material is invalid!!\n"
-
+                warnings += "!!invalid structure!!\n"
             eM.graph(warnings)
+
+            h = nan
+            w = nan
+
+            if tank.h is not None:
+                h = tank.h
+                w = tank.w
+
+            diagram = "     w = {:.1f}m".format(w) + "\n"
+            diagram += "    /-------\\" + "\n"
+            diagram += "    |       |" + "\n"
+            diagram += "    |       |" + "\n"
+            diagram += "    |       |" + "h = {:.1f}m".format(h) + "\n"
+            diagram += "    |       |" + "\n"
+            diagram += "    |       |" + "\n"
+            diagram += "    \\-------/" + "\n"
+
+            tDG.graph(diagram)
 
             return isValid
 
@@ -341,28 +362,26 @@ def showModEditor():
                 tempElem.setcontent(tpe)
 
             elif isinstance(newMod, Tank):
-                pC = editor.addelement("lu", h=0.45, w=0.24, type="menu", t="Content")
-                pC.menu(">", materialNames, mode="sel")
-                pS = editor.addelement("lu", h=0.45, w=0.24, type="menu", t="Structure")
-                pS.menu(">", materialNames, mode="sel")
-                pM = editor.addelement("lu", h=0.1, w=0.24, type="value", t="mass")
+                pC = editor.addelement("lu", h=0.45, w=0.25, type="menu", t="Content")
+                pC.menu(">", materialNames, mode="trig")
+
+                pS = editor.addelement("lu", h=0.45, w=0.25, type="menu", t="Structure")
+                pS.menu(">", materialNames, mode="trig")
+
+                pM = editor.addelement("lu", h=0.1, w=0.25, type="value", t="mass")
                 pM.value("t", pM.val, reversed=True)
                 pM.bind("m")
-                pLDR = editor.addelement("lu", h=0.1, w=0.24, type="value", t="L/D")
+                pLDR = editor.addelement("lu", h=0.1, w=0.25, type="value", t="L/D")
                 pLDR.value("", pLDR.val)
                 pLDR.bind("r")
-                eM = editor.addelement("lu", h=0.2, w=0.24)
-                tDG = editor.addelement("lu", h=0.5, w=0.24)
+                eM = editor.addelement("lu", h=0.2, w=0.25, t="Errors:")
+                tDG = editor.addelement("lu", h=0.5, w=0.25, t="Diagram")
 
                 (*tpe,) = (pC, pS, pM, pLDR, eM, tDG)
                 tempElem.setcontent(tpe)
 
         def updateDisplayed():
-            """updates when underlying data structure changes due to data load,
-            refreshes the Module name display and other stuff. 
-            """
-            mod = currentMod.getcontent()
-            modname.setval(mod.name)
+            return True
 
         load.button("LOAD", loadMod)
         new.button("NEW", newMod)

@@ -478,7 +478,7 @@ class menu(element):
 
     def update(self):
         def op():
-            if self.triggered is not None and self.triggers is not None > 0:
+            if self.triggered is not None and self.triggers is not None:
                 if self.trigargs is None:
                     self.triggers[self.triggered]()
                 else:
