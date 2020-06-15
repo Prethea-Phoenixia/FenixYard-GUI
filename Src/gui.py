@@ -445,6 +445,8 @@ class menu(element):
         self.graph(lines[self.scroll * (self.w - 1) :])
 
     def interact(self, kp=None):
+        if len(self.choices)<1:
+            return
         def flip_up():
             if self.selection < len(self.choices) - 1:
                 self.selection += 1
@@ -561,7 +563,7 @@ def mainloop(window, loopfunction):
                 print('element with keybind "{}" not found in {}'.format(ind, kbs))
 
         except AttributeError:
-            print("element {} not interactable".format(ind))
+            print("Attribute Error,element {} not interactable".format(ind))
         except IndexError:
             print("index {} out of range:0-{}".format(ind, len(window.elements) - 1))
 

@@ -46,7 +46,7 @@ class Ship(object):
             if isinstance(stuff, Engine):
                 # defaults to engine thrusting directly forward.
                 self.engines.append([stuff_copy, Vector(0, 0, 1)])
-                stuff_copy.ort = Vector(0,0,1)
+                stuff_copy.ort = Vector(0, 0, 1)
 
         elif num > 1:
             # add clusters of stuff.
@@ -60,7 +60,6 @@ class Ship(object):
                     )
                     self.engines.append([eng, spher.spher_to_cart()])
                     eng.ort = spher.spher_to_cart()
-
 
     # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
     # into [a,b,c,d]
@@ -390,13 +389,27 @@ class Ship(object):
         dump(self, savefile)
         savefile.close()
 
-
     def modnames(self):
         modnames = []
         for mod in self.module:
-            if isinstance(mod,list):
-                modnames.append("{}x{}".format(len(mod),mod[0].name))
+            if isinstance(mod, list):
+                modnames.append("{}x{}".format(len(mod), mod[0].name))
             else:
                 modnames.append(mod.name)
 
         return modnames
+
+    def delmod(self, i):
+        deleted_mod = self.module[i]
+
+        if isinstance(deleted_mod, list):
+            for i in deleted_mod:
+                if isinstance(i, Engine):
+                    self.engines.remove([i, self.get_engine_orient(i)])
+
+        elif isinstance(deleted_mod, Engine):
+            self.engines.remove([deleted_mod, self.get_engine_orient(deleted_mod)])
+
+        self.module.remove(deleted_mod)
+
+        self.tally()

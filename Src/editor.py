@@ -61,7 +61,12 @@ def showShipEditor():
 
     addmodule = editor.addelement("ru", w=0.1, h=0.1, t="", type="button")
 
+    delmodule = editor.addelement("ru", w=0.1, h=0.1, t="", type="button")
+
     shipmodlist = editor.addelement("lu", w=0.2, h=0.9, t="Module:", type="menu")
+    shipmodlist.bind("w")
+
+    modinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
 
     shipinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
 
@@ -120,7 +125,6 @@ def showShipEditor():
             # which one to get?
             modi = modselect.getval()
             # load our module.
-            mod = Mod()
             currentMod.setcontent(
                 Mod.load(absolutePath + r"\mods\{}".format(modfiles[modi]))
             )
@@ -134,12 +138,28 @@ def showShipEditor():
             else:
                 print("Create a ship first!")
 
+        def popModule():
+            modi = shipmodlist.getval()
+            ship = currentShip.getcontent()
+            if ship is not None and len(ship.module) > modi:
+                ship.delmod(modi)
+            else:
+                print("not valid deletion")
+
         addmodule.button("Add Module", insertModule)
+        delmodule.button("Del Module", popModule)
 
         # ship informations displayed.
         if hasattr(ship, "diagram") and ship.diagram() is not None:
             diagram.graph(ship.diagram())
             shipmodlist.menu(">>", ship.modnames())
+
+        ship = currentShip.getcontent()
+        if ship is not None and len(ship.module) > 0:
+            selmod = ship.module[shipmodlist.getval()]
+            modinfo.graph(selmod.name)
+        else:
+            modinfo.clear()
 
         save.button("SAVE", saveShip)
         load.button("LOAD", loadShip)
@@ -241,10 +261,18 @@ def showModEditor():
 
             h = nan
             w = nan
+            m = nan
+            strm = nan
 
             if tank.h is not None:
                 h = tank.h
                 w = tank.w
+
+            if tank.mass is not None:
+                m = tank.mass
+
+            if tank.strmass is not None:
+                strm = tank.strmass
 
             diagram = "     w = {:.1f}m".format(w) + "\n"
             diagram += "    /-------\\" + "\n"
@@ -254,6 +282,8 @@ def showModEditor():
             diagram += "    |       |" + "\n"
             diagram += "    |       |" + "\n"
             diagram += "    \\-------/" + "\n"
+
+            diagram += " mass {} t\n".format(m / 1000)
 
             tDG.graph(diagram)
 

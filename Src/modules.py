@@ -42,6 +42,8 @@ class Tank(Mod):
 
         self.fillratio = None
 
+        self.strmass = None
+
     def filltank(self, propellant, pmass, material):
         self.content = propellant
         self.pmass = pmass
@@ -52,6 +54,7 @@ class Tank(Mod):
         self.name = "{:.1f}t {} tank of {}".format(
             self.pmass / 1000, self.str.name, self.content.name
         )
+        self.mass = self.pmass
 
     # bullet shaped tank.
     def resize(self, ldratio):
@@ -79,7 +82,8 @@ class Tank(Mod):
             deltamass = massTank - mass
             return deltamass
 
-        self.mass = brents(f, 0, pmass)
+        self.strmass = brents(f, 0, pmass)
+        self.mass = self.strmass + self.pmass
 
     def percentage(self):
         self.fillratio = self.pmass / (self.volume * self.content.lqdensity)
