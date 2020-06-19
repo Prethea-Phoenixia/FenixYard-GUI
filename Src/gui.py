@@ -313,13 +313,16 @@ class val(element):
         self.val = None
         self.reversed = False
 
+    """ behavior: use val, if val is None: revert to default"""
     def value(self, pt, val, default=0, reversed=False):
         self.clear()
+
+        self.prompt = pt
+        self.val = val
+
         if self.val is None:
             self.val = default
-        else:
-            self.val = val
-        self.prompt = pt
+
         h, w = self.h, self.w
 
         self.reversed = reversed
@@ -445,8 +448,9 @@ class menu(element):
         self.graph(lines[self.scroll * (self.w - 1) :])
 
     def interact(self, kp=None):
-        if len(self.choices)<1:
+        if len(self.choices) < 1:
             return
+
         def flip_up():
             if self.selection < len(self.choices) - 1:
                 self.selection += 1

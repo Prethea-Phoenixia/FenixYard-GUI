@@ -120,7 +120,10 @@ class Ship(object):
             curr_h += h
 
         # center_of_mass as expressed in h
-        h_com = sum(x * y for x, y in zip(hcum, masses)) / sum(masses)
+        try:
+            h_com = sum(x * y for x, y in zip(hcum, masses)) / sum(masses)
+        except ZeroDivisionError:
+            h_com = 0
 
         for mod in self.module:
             pos = h_com - hcum[self.module.index(mod)]
@@ -128,7 +131,10 @@ class Ship(object):
             if isinstance(mod, list):
                 i = 0
                 for m in mod:
-                    rad_sep = m.r / tan(pi / len(mod))
+                    if len(mod) == 2:
+                        rad_sep = m.r
+                    else:
+                        rad_sep = m.r / tan(pi / len(mod))
                     ang = i / len(mod) * 2 * pi
                     m.pos = pos * Vector(0, 0, 1) + Vector(
                         sin(ang) * rad_sep, cos(ang) * rad_sep, 0

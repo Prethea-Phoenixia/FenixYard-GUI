@@ -66,9 +66,15 @@ def showShipEditor():
     shipmodlist = editor.addelement("lu", w=0.2, h=0.9, t="Module:", type="menu")
     shipmodlist.bind("w")
 
-    modinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
+    stracclim = editor.addelement("lu", w=0.2, h=0.1, t="", type="value")
+    stracclim.value(
+        ">>", 9.8,
+    )
+    stracclim.bind("a")
 
     shipinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
+
+    modinfo = editor.addelement("lu", w=0.2, h=0.4, t="info")
 
     def loop_func():
         modfiles = os.listdir(absolutePath + r"\mods")
@@ -106,6 +112,7 @@ def showShipEditor():
         def newShip():
             newship = Ship()
             currentShip.setcontent(newship)
+            stracclim.value(">>", 9.8)
             updateDisplayed()
 
         def delShip():
@@ -132,7 +139,18 @@ def showShipEditor():
             ship = currentShip.getcontent()
             # validate our ship is actually a Ship object
             if ship is not None:
-                ship.add(currentMod.getcontent())
+                # by how much?
+                while True:
+                    try:
+                        num = int(input("clusters of>>"))
+                        if num >= 1:
+                            break
+                        else:
+                            print("integer >=1 plz")
+                    except TypeError:
+                        print("numeric please!")
+
+                ship.add(currentMod.getcontent(), num)
                 currentShip.setcontent(ship)
                 updateDisplayed()
             else:
@@ -155,16 +173,35 @@ def showShipEditor():
             shipmodlist.menu(">>", ship.modnames())
 
         ship = currentShip.getcontent()
-        if ship is not None and len(ship.module) > 0:
-            selmod = ship.module[shipmodlist.getval()]
-            modinfo.graph(selmod.name)
-        else:
-            modinfo.clear()
 
         save.button("SAVE", saveShip)
         load.button("LOAD", loadShip)
         new.button("NEW", newShip)
         delete.button("DEL", delShip)
+
+        ship = currentShip.getcontent()
+        if hasattr(ship, "module") and len(ship.module) > 0:
+            if hasattr(ship, "tally"):
+                ship.tally()
+            if hasattr(ship, "buildup_tank"):
+                ship.str_acc_lim = stracclim.getval()
+                ship.buildup_tank()
+
+            selmod = ship.module[shipmodlist.getval()]
+
+            if selmod is not None:
+                graphics = ""
+                if isinstance(selmod, list):
+                    for m in selmod:
+                        pos = m.pos
+                        graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
+                else:
+                    pos = ship.get_mod_pos(selmod)
+                    graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
+                modinfo.graph(graphics)
+
+        else:
+            modinfo.clear()
 
     mainloop(editor, loop_func)
 
