@@ -450,8 +450,8 @@ def vec_to_pbl_matrix(result, args):
 
 
 if __name__ == "__main__":
-    a = Matrix(5, 2)
-    b = Matrix(5, 1)
+    a = Matrix(4, 2)
+    b = Matrix(4, 1)
     a.mat = [
         [0.0372, 0.2869],
         [0.6861, 0.7071],
@@ -459,9 +459,10 @@ if __name__ == "__main__":
         [0.6344, 0.6170],
     ]
     b.mat = [[0.8587], [0.1781], [0.0747], [0.8405]]
-
+    
     print("test least norm")
     print(lsnm(a, b))
+    
 
     print("reference starting matrix")
     d = a.aug(b)

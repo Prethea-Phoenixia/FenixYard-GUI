@@ -196,7 +196,7 @@ def showShipEditor():
                         pos = m.pos
                         graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
                 else:
-                    pos = ship.get_mod_pos(selmod)
+                    pos = selmod.pos
                     graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
                 modinfo.graph(graphics)
 

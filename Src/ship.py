@@ -34,7 +34,6 @@ class Ship(object):
         self.mass = 0
         # structural acceleration limit
         self.str_acc_lim = 0
-        self.mod_pos = []
         self.moi = 0, 0
         self.percentage = None
         self.name = "NewShip"
@@ -61,6 +60,8 @@ class Ship(object):
                     self.engines.append([eng, spher.spher_to_cart()])
                     eng.ort = spher.spher_to_cart()
 
+        self.tally()
+
     # try to flatten a non-uniform data structure, e.g.[a,[b,c],d]
     # into [a,b,c,d]
     def get_flat(self, attr):
@@ -84,7 +85,6 @@ class Ship(object):
 
         # starting coordinate system:using starting module's top as
         # reference.
-        self.mod_pos = []
         masses = []
         heights = []
         for mod in self.module:
@@ -126,8 +126,7 @@ class Ship(object):
             h_com = 0
 
         for mod in self.module:
-            pos = h_com - hcum[self.module.index(mod)]
-            self.mod_pos.append(pos)
+            p = h_com - hcum[self.module.index(mod)]
             if isinstance(mod, list):
                 i = 0
                 for m in mod:
@@ -136,12 +135,12 @@ class Ship(object):
                     else:
                         rad_sep = m.r / tan(pi / len(mod))
                     ang = i / len(mod) * 2 * pi
-                    m.pos = pos * Vector(0, 0, 1) + Vector(
+                    m.pos = p * Vector(0, 0, 1) + Vector(
                         sin(ang) * rad_sep, cos(ang) * rad_sep, 0
                     )
                     i += 1
             else:
-                mod.pos = Vector(0, 0, pos)
+                mod.pos = Vector(0, 0, p)
 
         for mod in self.get_flat("module"):
             if isinstance(mod, Tank):
@@ -259,16 +258,7 @@ class Ship(object):
 
     # return the position of a module. Handles clusters and single modules.
     def get_mod_pos(self, mod):
-        if isinstance(mod, list):
-            return self.mod_pos[self.module.index(mod)]
-        else:
-            if mod in self.module:
-                return self.mod_pos[self.module.index(mod)]
-            else:
-                for cluster in self.module:
-                    if isinstance(cluster, list):
-                        if mod in cluster:
-                            return self.mod_pos[self.module.index(cluster)]
+        return mod.pos
 
     def get_engine_orient(self, engine):
         for e, o in self.engines:
