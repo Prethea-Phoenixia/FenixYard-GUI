@@ -293,7 +293,7 @@ class Ship(object):
         /     \
         """
 
-        eng = makegraph(" \\___/", " /   \\ ", "/     \\")
+        eng = makegraph(" \\___/ ", " /   \\ ", "/     \\")
 
         # tank graphics
         """
@@ -340,10 +340,9 @@ class Ship(object):
                 for mod in pos:
                     curr_height = height_dict[mod.__class__]
                     pad_to_left = (len(pos) // 2 - pos.index(mod)) * len_dict[
-                        mod.__class__
-                    ] + len(pos) % 2 * len_dict[mod.__class__] // 2
+                        mod.__class__] + len(pos) % 2 * len_dict[mod.__class__] // 2
                     start = centerline - pad_to_left
-                    end = centerline - pad_to_left + len_dict[mod.__class__]
+                    end = start + len_dict[mod.__class__]
                     graph_index = 0
                     for i in range(height, height + height_dict[mod.__class__]):
                         graph_lines[i] = (
@@ -357,7 +356,7 @@ class Ship(object):
                 curr_height = height_dict[pos.__class__]
                 pad_to_left = len_dict[pos.__class__] // 2
                 start = centerline - pad_to_left
-                end = centerline - pad_to_left + len_dict[pos.__class__]
+                end = start + len_dict[pos.__class__]
                 graph_index = 0
                 for i in range(height, height + height_dict[pos.__class__]):
                     graph_lines[i] = (

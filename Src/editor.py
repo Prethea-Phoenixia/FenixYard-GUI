@@ -68,7 +68,8 @@ def showShipEditor():
 
     stracclim = editor.addelement("lu", w=0.2, h=0.1, t="", type="value")
     stracclim.value(
-        ">>", 9.8,
+        ">>",
+        9.8,
     )
     stracclim.bind("a")
 
@@ -194,10 +195,10 @@ def showShipEditor():
                 if isinstance(selmod, list):
                     for m in selmod:
                         pos = m.pos
-                        graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
+                        graphics += "pos>{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
                 else:
                     pos = selmod.pos
-                    graphics += "{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
+                    graphics += "pos>{:.2f},{:.2f},{:.2f}\n".format(pos.x, pos.y, pos.z)
                 modinfo.graph(graphics)
 
         else:
